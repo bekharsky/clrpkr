@@ -15,10 +15,18 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate, FlutterStreamHandler {
   override func applicationDidFinishLaunching(_ notification: Notification) {
     super.applicationDidFinishLaunching(notification)
 
-    NSApp.setActivationPolicy(.accessory)
-
     DispatchQueue.main.async { [weak self] in
       self?.configureStatusItem()
+    }
+  }
+
+  override func applicationDidBecomeActive(_ notification: Notification) {
+    super.applicationDidBecomeActive(notification)
+
+    if statusItem == nil || statusItem?.button == nil {
+      DispatchQueue.main.async { [weak self] in
+        self?.configureStatusItem()
+      }
     }
   }
 
@@ -111,29 +119,29 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate, FlutterStreamHandler {
       NSStatusBar.system.removeStatusItem(existingItem)
     }
 
-    statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    statusItem = NSStatusBar.system.statusItem(withLength: 36)
     statusItem?.isVisible = true
     rebuildStatusMenu()
 
     if let button = statusItem?.button {
       button.title = "PK"
-      if #available(macOS 11.0, *) {
-        let image = NSImage(
-          systemSymbolName: "eyedropper.halffull",
-          accessibilityDescription: "ClrPkr"
-        )
-        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
-        button.image = image?.withSymbolConfiguration(config)
-        button.image?.isTemplate = true
-      }
+      button.image = nil
       button.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .bold)
-      button.imagePosition = button.image == nil ? .noImage : .imageLeading
+      button.imagePosition = .noImage
       button.isHidden = false
       button.appearsDisabled = false
       button.target = self
       button.action = #selector(openStatusMenu(_:))
       button.toolTip = "ClrPkr"
       button.sizeToFit()
+      NSLog(
+        "ClrPkr status button frame=%@ hidden=%@ window=%@",
+        NSStringFromRect(button.frame),
+        button.isHidden.description,
+        String(describing: button.window)
+      )
+    } else {
+      NSLog("ClrPkr status item has no button")
     }
 
     NSLog("ClrPkr status item configured: %@", statusItem?.description ?? "nil")
