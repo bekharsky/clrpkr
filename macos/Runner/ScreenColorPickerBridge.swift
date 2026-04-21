@@ -138,6 +138,8 @@ final class ScreenColorPickerBridge {
   private func configureLensPanel(_ panel: NSPanel) {
     configurePickerPanel(panel)
     panel.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
+    panel.hasShadow = true
+    panel.backgroundColor = .clear
   }
 }
 
@@ -203,6 +205,16 @@ final class PickerLensView: NSView {
   fileprivate var sample: PixelSample?
   var mousePoint: CGPoint = .zero
 
+  override init(frame frameRect: NSRect) {
+    super.init(frame: frameRect)
+    wantsLayer = true
+  }
+
+  required init?(coder: NSCoder) {
+    super.init(coder: coder)
+    wantsLayer = true
+  }
+
   static func frameForLens(around point: CGPoint, visibleFrame: CGRect) -> CGRect {
     let size = CGSize(width: 184, height: 216)
     var origin = CGPoint(x: point.x + 26, y: point.y - size.height - 18)
@@ -233,32 +245,34 @@ final class PickerLensView: NSView {
 
     let lensRect = bounds
 
-    context.saveGState()
-    let shadow = NSShadow()
-    shadow.shadowColor = NSColor(calibratedWhite: 0, alpha: 0.22)
-    shadow.shadowOffset = NSSize(width: 0, height: -10)
-    shadow.shadowBlurRadius = 20
-    shadow.set()
-
-    let bubblePath = NSBezierPath(roundedRect: lensRect, xRadius: 22, yRadius: 22)
-    NSColor(calibratedRed: 0.97, green: 0.95, blue: 0.90, alpha: 0.98).setFill()
+    let bubbleRadius: CGFloat = 20
+    let bubblePath = NSBezierPath(
+      roundedRect: lensRect,
+      xRadius: bubbleRadius,
+      yRadius: bubbleRadius
+    )
+    NSColor(calibratedWhite: 0.10, alpha: 0.96).setFill()
     bubblePath.fill()
-    NSColor(calibratedRed: 0.44, green: 0.51, blue: 0.39, alpha: 1).setStroke()
-    bubblePath.lineWidth = 2
+    NSColor(calibratedWhite: 1.0, alpha: 0.10).setStroke()
+    bubblePath.lineWidth = 1
     bubblePath.stroke()
-    context.restoreGState()
 
-    let previewInset: CGFloat = 18
-    let previewHeight = lensRect.height - 62
+    let previewInset: CGFloat = 12
+    let previewHeight = lensRect.height - 48
     let previewRect = CGRect(
       x: lensRect.minX + previewInset,
-      y: lensRect.minY + 46,
+      y: lensRect.minY + 36,
       width: lensRect.width - previewInset * 2,
       height: previewHeight
     )
 
     context.saveGState()
-    let previewPath = NSBezierPath(roundedRect: previewRect, xRadius: 18, yRadius: 18)
+    let previewRadius = max(12, bubbleRadius - previewInset)
+    let previewPath = NSBezierPath(
+      roundedRect: previewRect,
+      xRadius: previewRadius,
+      yRadius: previewRadius
+    )
     previewPath.addClip()
     context.interpolationQuality = .none
     context.draw(sample.previewImage, in: previewRect)
@@ -266,7 +280,7 @@ final class PickerLensView: NSView {
     drawCenterMark(in: previewRect, context: context)
     context.restoreGState()
 
-    let swatchRect = CGRect(x: 18, y: 14, width: 20, height: 20)
+    let swatchRect = CGRect(x: 12, y: 10, width: 18, height: 18)
     NSColor(
       calibratedRed: CGFloat(sample.red) / 255,
       green: CGFloat(sample.green) / 255,
@@ -278,17 +292,17 @@ final class PickerLensView: NSView {
     let label = sample.hex
     let attributes: [NSAttributedString.Key: Any] = [
       .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .bold),
-      .foregroundColor: NSColor(calibratedRed: 0.18, green: 0.16, blue: 0.14, alpha: 1)
+      .foregroundColor: NSColor(calibratedWhite: 0.95, alpha: 1)
     ]
     label.draw(
-      at: CGPoint(x: swatchRect.maxX + 10, y: 17),
+      at: CGPoint(x: swatchRect.maxX + 8, y: 12),
       withAttributes: attributes
     )
   }
 
   private func drawGrid(in rect: CGRect, context: CGContext) {
     context.saveGState()
-    context.setStrokeColor(NSColor(calibratedWhite: 1, alpha: 0.15).cgColor)
+    context.setStrokeColor(NSColor(calibratedWhite: 1, alpha: 0.10).cgColor)
     context.setLineWidth(1)
 
     let cellSize = rect.width / 15
@@ -317,7 +331,7 @@ final class PickerLensView: NSView {
     )
 
     context.saveGState()
-    context.setStrokeColor(NSColor(calibratedRed: 0.73, green: 0.29, blue: 0.22, alpha: 1).cgColor)
+    context.setStrokeColor(NSColor(calibratedWhite: 1, alpha: 0.75).cgColor)
     context.setLineWidth(2)
     context.stroke(centerRect)
     context.restoreGState()
