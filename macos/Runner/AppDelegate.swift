@@ -1,32 +1,179 @@
 import Cocoa
 import FlutterMacOS
 
+final class StatusBarController: NSObject {
+  private let onPick: () -> Void
+  private let onAbout: () -> Void
+  private let onQuit: () -> Void
+  private let onCopy: (String) -> Void
+
+  private var statusItem: NSStatusItem?
+  private let statusMenu = NSMenu()
+  private var recentPickTexts: [String] = []
+
+  init(
+    onPick: @escaping () -> Void,
+    onAbout: @escaping () -> Void,
+    onQuit: @escaping () -> Void,
+    onCopy: @escaping (String) -> Void
+  ) {
+    self.onPick = onPick
+    self.onAbout = onAbout
+    self.onQuit = onQuit
+    self.onCopy = onCopy
+    super.init()
+  }
+
+  func install() {
+    if statusItem == nil {
+      statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    }
+
+    rebuildMenu()
+
+    guard let button = statusItem?.button else {
+      return
+    }
+
+    if #available(macOS 11.0, *) {
+      let image = NSImage(
+        systemSymbolName: "eyedropper.full",
+        accessibilityDescription: "ClrPkr"
+      )
+      let config = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
+      button.image = image?.withSymbolConfiguration(config)
+      button.image?.isTemplate = true
+      button.title = ""
+      button.imagePosition = .imageOnly
+    } else {
+      button.title = "PK"
+      button.image = nil
+      button.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .bold)
+      button.imagePosition = .noImage
+    }
+
+    button.isHidden = false
+    button.appearsDisabled = false
+    button.toolTip = "ClrPkr"
+    button.sizeToFit()
+    statusItem?.isVisible = true
+    statusItem?.menu = statusMenu
+  }
+
+  func updateRecentPicks(_ picks: [String]) {
+    recentPickTexts = Array(picks.prefix(10))
+    rebuildMenu()
+  }
+
+  private func rebuildMenu() {
+    statusMenu.removeAllItems()
+
+    let pickItem = NSMenuItem(title: "Pick", action: #selector(handlePick), keyEquivalent: "")
+    pickItem.target = self
+    statusMenu.addItem(pickItem)
+    statusMenu.addItem(NSMenuItem.separator())
+
+    if recentPickTexts.isEmpty {
+      let empty = NSMenuItem(title: "No recent picks", action: nil, keyEquivalent: "")
+      empty.isEnabled = false
+      statusMenu.addItem(empty)
+    } else {
+      for text in recentPickTexts {
+        let item = NSMenuItem(title: text, action: #selector(handleCopy(_:)), keyEquivalent: "")
+        item.target = self
+        item.representedObject = text
+        statusMenu.addItem(item)
+      }
+    }
+
+    statusMenu.addItem(NSMenuItem.separator())
+
+    let aboutItem = NSMenuItem(title: "About ClrPkr", action: #selector(handleAbout), keyEquivalent: "")
+    aboutItem.target = self
+    statusMenu.addItem(aboutItem)
+
+    let quitItem = NSMenuItem(title: "Quit ClrPkr", action: #selector(handleQuit), keyEquivalent: "q")
+    quitItem.target = self
+    statusMenu.addItem(quitItem)
+  }
+
+  @objc
+  private func handlePick() {
+    onPick()
+  }
+
+  @objc
+  private func handleAbout() {
+    onAbout()
+  }
+
+  @objc
+  private func handleQuit() {
+    onQuit()
+  }
+
+  @objc
+  private func handleCopy(_ sender: NSMenuItem) {
+    guard let text = sender.representedObject as? String else {
+      return
+    }
+    onCopy(text)
+  }
+}
+
 @main
 class AppDelegate: FlutterAppDelegate, NSWindowDelegate, FlutterStreamHandler {
-  private var statusItem: NSStatusItem?
-  private var statusMenu = NSMenu()
-  private var recentPickTexts: [String] = []
   private var pickEventSink: FlutterEventSink?
   private var pickerBridge: ScreenColorPickerBridge?
-  private var methodChannel: FlutterMethodChannel?
-  private var eventChannel: FlutterEventChannel?
   private var channelsConfigured = false
+  private lazy var statusBarController = StatusBarController(
+    onPick: { [weak self] in
+      self?.startPickerFromToolbar(nil)
+    },
+    onAbout: { [weak self] in
+      self?.showAbout(nil)
+    },
+    onQuit: { [weak self] in
+      self?.quitApp(nil)
+    },
+    onCopy: { [weak self] text in
+      self?.copyRecentPickText(text)
+    }
+  )
 
-  override func applicationDidFinishLaunching(_ notification: Notification) {
-    super.applicationDidFinishLaunching(notification)
+  override init() {
+    super.init()
 
-    DispatchQueue.main.async { [weak self] in
-      self?.configureStatusItem()
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(handleDidFinishLaunchingNotification(_:)),
+      name: NSApplication.didFinishLaunchingNotification,
+      object: nil
+    )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(handleDidBecomeActiveNotification(_:)),
+      name: NSApplication.didBecomeActiveNotification,
+      object: nil
+    )
+  }
+
+  deinit {
+    NotificationCenter.default.removeObserver(self)
+  }
+
+  @objc
+  private func handleDidFinishLaunchingNotification(_ notification: Notification) {
+    statusBarController.install()
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+      self?.statusBarController.install()
     }
   }
 
-  override func applicationDidBecomeActive(_ notification: Notification) {
-    super.applicationDidBecomeActive(notification)
-
-    if statusItem == nil || statusItem?.button == nil {
-      DispatchQueue.main.async { [weak self] in
-        self?.configureStatusItem()
-      }
+  @objc
+  private func handleDidBecomeActiveNotification(_ notification: Notification) {
+    DispatchQueue.main.async { [weak self] in
+      self?.statusBarController.install()
     }
   }
 
@@ -54,19 +201,6 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate, FlutterStreamHandler {
   }
 
   @objc
-  private func toggleMainWindow(_ sender: Any?) {
-    guard let window = mainFlutterWindow else {
-      return
-    }
-
-    if window.isVisible {
-      hideMainWindow()
-    } else {
-      showMainWindow()
-    }
-  }
-
-  @objc
   private func quitApp(_ sender: Any?) {
     NSApp.terminate(nil)
   }
@@ -83,22 +217,10 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate, FlutterStreamHandler {
   }
 
   @objc
-  private func copyRecentPick(_ sender: NSMenuItem) {
-    guard let text = sender.representedObject as? String else {
-      return
-    }
+  private func copyRecentPickText(_ text: String) {
     let pasteboard = NSPasteboard.general
     pasteboard.clearContents()
     pasteboard.setString(text, forType: .string)
-  }
-
-  @objc
-  private func openStatusMenu(_ sender: Any?) {
-    guard let button = statusItem?.button else {
-      return
-    }
-    statusItem?.popUpMenu(statusMenu)
-    button.highlight(false)
   }
 
   private func showMainWindow() {
@@ -112,77 +234,6 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate, FlutterStreamHandler {
 
   private func hideMainWindow() {
     mainFlutterWindow?.orderOut(nil)
-  }
-
-  private func configureStatusItem() {
-    if let existingItem = statusItem {
-      NSStatusBar.system.removeStatusItem(existingItem)
-    }
-
-    statusItem = NSStatusBar.system.statusItem(withLength: 36)
-    statusItem?.isVisible = true
-    rebuildStatusMenu()
-
-    if let button = statusItem?.button {
-      button.title = "PK"
-      button.image = nil
-      button.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .bold)
-      button.imagePosition = .noImage
-      button.isHidden = false
-      button.appearsDisabled = false
-      button.target = self
-      button.action = #selector(openStatusMenu(_:))
-      button.toolTip = "ClrPkr"
-      button.sizeToFit()
-      NSLog(
-        "ClrPkr status button frame=%@ hidden=%@ window=%@",
-        NSStringFromRect(button.frame),
-        button.isHidden.description,
-        String(describing: button.window)
-      )
-    } else {
-      NSLog("ClrPkr status item has no button")
-    }
-
-    NSLog("ClrPkr status item configured: %@", statusItem?.description ?? "nil")
-  }
-
-  private func rebuildStatusMenu() {
-    statusMenu.removeAllItems()
-    statusMenu.addItem(
-      withTitle: "Pick",
-      action: #selector(startPickerFromToolbar(_:)),
-      keyEquivalent: ""
-    )
-    statusMenu.addItem(NSMenuItem.separator())
-
-    if recentPickTexts.isEmpty {
-      let empty = NSMenuItem(title: "No recent picks", action: nil, keyEquivalent: "")
-      empty.isEnabled = false
-      statusMenu.addItem(empty)
-    } else {
-      for text in recentPickTexts {
-        let item = NSMenuItem(
-          title: text,
-          action: #selector(copyRecentPick(_:)),
-          keyEquivalent: ""
-        )
-        item.representedObject = text
-        statusMenu.addItem(item)
-      }
-    }
-
-    statusMenu.addItem(NSMenuItem.separator())
-    statusMenu.addItem(
-      withTitle: "About ClrPkr",
-      action: #selector(showAbout(_:)),
-      keyEquivalent: ""
-    )
-    statusMenu.addItem(
-      withTitle: "Quit ClrPkr",
-      action: #selector(quitApp(_:)),
-      keyEquivalent: "q"
-    )
   }
 
   func configureFlutterBindings(
@@ -206,8 +257,6 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate, FlutterStreamHandler {
     )
 
     eventChannel.setStreamHandler(self)
-    self.methodChannel = methodChannel
-    self.eventChannel = eventChannel
     channelsConfigured = true
 
     pickerBridge = ScreenColorPickerBridge(
@@ -241,10 +290,10 @@ class AppDelegate: FlutterAppDelegate, NSWindowDelegate, FlutterStreamHandler {
       case "updateMenu":
         let arguments = call.arguments as? [String: Any]
         let recentPicks = arguments?["recentPicks"] as? [[String: Any]] ?? []
-        self.recentPickTexts = recentPicks.compactMap { pick in
+        let recentPickTexts = recentPicks.compactMap { pick in
           pick["copyText"] as? String
         }
-        self.rebuildStatusMenu()
+        self.statusBarController.updateRecentPicks(recentPickTexts)
         result(nil)
       default:
         result(FlutterMethodNotImplemented)
