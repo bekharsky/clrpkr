@@ -76,7 +76,6 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
   final List<PickedColor> _history = <PickedColor>[];
   StreamSubscription<dynamic>? _pickSubscription;
   ColorFormat _format = ColorFormat.hex;
-  String? _lastCopiedId;
 
   @override
   void initState() {
@@ -167,9 +166,6 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
       if (!mounted) {
         return;
       }
-      setState(() {
-        _lastCopiedId = item.id;
-      });
       _syncMenu();
       ScaffoldMessenger.of(
         context,
@@ -187,7 +183,6 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
   void _clearHistory() {
     setState(() {
       _history.clear();
-      _lastCopiedId = null;
     });
     _syncMenu();
   }
@@ -249,7 +244,6 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
                                   return _HistoryRow(
                                     item: item,
                                     format: _format,
-                                    copied: _lastCopiedId == item.id,
                                     onTap: () => _copyColor(item),
                                   );
                                 },
@@ -290,13 +284,11 @@ class _HistoryRow extends StatefulWidget {
   const _HistoryRow({
     required this.item,
     required this.format,
-    required this.copied,
     required this.onTap,
   });
 
   final PickedColor item;
   final ColorFormat format;
-  final bool copied;
   final VoidCallback onTap;
 
   @override

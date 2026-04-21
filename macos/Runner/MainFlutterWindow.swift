@@ -83,8 +83,6 @@ class MainFlutterWindow: NSWindow, NSToolbarDelegate {
     ])
     item.label = ""
     item.paletteLabel = "Pick"
-    item.minSize = NSSize(width: 40, height: 32)
-    item.maxSize = NSSize(width: 40, height: 32)
     item.view = button
     item.visibilityPriority = .high
     return item
