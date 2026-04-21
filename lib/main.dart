@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:super_clipboard/super_clipboard.dart';
@@ -17,24 +19,16 @@ class ClrPkrApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const paper = Color(0xFFF7F0E4);
-    const ink = Color(0xFF2E2923);
-
     return MaterialApp(
       title: 'ClrPkr',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.light,
-        scaffoldBackgroundColor: paper,
+        scaffoldBackgroundColor: const Color(0xFFF3F3F5),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF60755C),
+          seedColor: const Color(0xFF0A84FF),
           brightness: Brightness.light,
-          surface: paper,
-        ),
-        textTheme: ThemeData.light().textTheme.apply(
-          bodyColor: ink,
-          displayColor: ink,
-          fontFamily: 'Georgia',
+          surface: const Color(0xFFF3F3F5),
         ),
         useMaterial3: true,
       ),
@@ -82,7 +76,6 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
   final List<PickedColor> _history = <PickedColor>[];
   StreamSubscription<dynamic>? _pickSubscription;
   ColorFormat _format = ColorFormat.hex;
-  bool _pickerBusy = false;
   String? _lastCopiedId;
 
   @override
@@ -101,6 +94,7 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
         );
       },
     );
+    _syncMenu();
   }
 
   @override
@@ -109,35 +103,26 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
     super.dispose();
   }
 
-  Future<void> _startPicker() async {
-    if (_pickerBusy) {
-      return;
-    }
-
-    setState(() {
-      _pickerBusy = true;
-    });
+  Future<void> _syncMenu() async {
+    final items = _history.take(10).map((item) {
+      return <String, String>{
+        'title': _formatColor(item, _format),
+        'copyText': _formatColor(item, _format),
+      };
+    }).toList();
 
     try {
-      await _pickerMethodChannel.invokeMethod<void>('startPicker');
-    } on PlatformException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message ?? 'Unable to start picker.')),
+      await _pickerMethodChannel.invokeMethod<void>(
+        'updateMenu',
+        <String, dynamic>{'recentPicks': items},
       );
-      setState(() {
-        _pickerBusy = false;
-      });
+    } catch (_) {
+      // Best-effort menu sync; the app still works without it.
     }
   }
 
   void _handleNativePick(dynamic event) {
     if (event is! Map<Object?, Object?>) {
-      setState(() {
-        _pickerBusy = false;
-      });
       return;
     }
 
@@ -145,9 +130,6 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
     final green = (event['g'] as num?)?.toInt();
     final blue = (event['b'] as num?)?.toInt();
     if (red == null || green == null || blue == null) {
-      setState(() {
-        _pickerBusy = false;
-      });
       return;
     }
 
@@ -165,9 +147,9 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
     );
 
     setState(() {
-      _pickerBusy = false;
       _history.insert(0, item);
     });
+    _syncMenu();
   }
 
   Future<void> _copyColor(PickedColor item) async {
@@ -188,6 +170,7 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
       setState(() {
         _lastCopiedId = item.id;
       });
+      _syncMenu();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Copied $value')));
@@ -206,387 +189,94 @@ class _ClrPkrHomeState extends State<ClrPkrHome> {
       _history.clear();
       _lastCopiedId = null;
     });
+    _syncMenu();
   }
 
   @override
   Widget build(BuildContext context) {
-    const shell = Color(0xFFEAE0CF);
-    const panel = Color(0xFFFDF8EF);
-    const trim = Color(0xFF6A7F5F);
-    const accent = Color(0xFFB94B37);
-    const ink = Color(0xFF2E2923);
-
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: <Color>[Color(0xFFF7F0E4), Color(0xFFF2E8D7)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: shell,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFCEBFA6), width: 1.4),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 20,
-                    offset: Offset(0, 12),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: <Widget>[
-                  Container(
-                    height: 68,
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    decoration: const BoxDecoration(
-                      color: trim,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(22),
-                      ),
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        FilledButton.icon(
-                          onPressed: _pickerBusy ? null : _startPicker,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: accent,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 14,
-                            ),
-                            textStyle: const TextStyle(
-                              fontFamily: 'Menlo',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                          icon: _pickerBusy
-                              ? const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.colorize_rounded, size: 18),
-                          label: Text(
-                            _pickerBusy ? 'Picking...' : 'Pick From Screen',
-                          ),
-                        ),
-                        const Spacer(),
-                        const Text(
-                          'ClrPkr',
-                          style: TextStyle(
-                            color: Color(0xFFF7F0E4),
-                            fontFamily: 'Menlo',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
-                      child: Column(
-                        children: <Widget>[
-                          _SectionCard(
-                            color: panel,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                const Text(
-                                  'Output Format',
-                                  style: TextStyle(
-                                    fontFamily: 'Menlo',
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.7,
-                                    color: ink,
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                Wrap(
-                                  spacing: 10,
-                                  runSpacing: 10,
-                                  children: ColorFormat.values.map((format) {
-                                    final selected = _format == format;
-                                    return ChoiceChip(
-                                      label: Text(format.label),
-                                      selected: selected,
-                                      onSelected: (_) {
-                                        setState(() {
-                                          _format = format;
-                                        });
-                                      },
-                                      backgroundColor: const Color(0xFFF4E9D5),
-                                      selectedColor: const Color(0xFFDCE7D3),
-                                      labelStyle: TextStyle(
-                                        fontFamily: 'Menlo',
-                                        fontWeight: FontWeight.w700,
-                                        color: selected ? trim : ink,
-                                      ),
-                                      side: BorderSide(
-                                        color: selected
-                                            ? trim
-                                            : const Color(0xFFCDBA9D),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Expanded(
-                            child: _SectionCard(
-                              color: panel,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Row(
-                                    children: <Widget>[
-                                      const Text(
-                                        'Previous Picks',
-                                        style: TextStyle(
-                                          fontFamily: 'Menlo',
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.7,
-                                          color: ink,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      TextButton.icon(
-                                        onPressed: _history.isEmpty
-                                            ? null
-                                            : _clearHistory,
-                                        icon: const Icon(
-                                          Icons.delete_outline_rounded,
-                                        ),
-                                        label: const Text('Clear History'),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: accent,
-                                          textStyle: const TextStyle(
-                                            fontFamily: 'Menlo',
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Expanded(
-                                    child: _history.isEmpty
-                                        ? const _EmptyHistory()
-                                        : ListView.separated(
-                                            itemCount: _history.length,
-                                            separatorBuilder: (_, _) =>
-                                                const SizedBox(height: 12),
-                                            itemBuilder: (context, index) {
-                                              final item = _history[index];
-                                              return _HistoryTile(
-                                                item: item,
-                                                value: _formatColor(
-                                                  item,
-                                                  _format,
-                                                ),
-                                                copied:
-                                                    _lastCopiedId == item.id,
-                                                onTap: () => _copyColor(item),
-                                              );
-                                            },
-                                          ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.child, required this.color});
-
-  final Widget child;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFD5C7AE)),
-      ),
-      child: Padding(padding: const EdgeInsets.all(16), child: child),
-    );
-  }
-}
-
-class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(Icons.visibility_rounded, size: 34, color: Color(0xFF6A7F5F)),
-            SizedBox(height: 14),
-            Text(
-              'Pick a colour from anywhere on screen.\nEach result lands here ready to copy.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.45,
-                color: Color(0xFF5C554E),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HistoryTile extends StatelessWidget {
-  const _HistoryTile({
-    required this.item,
-    required this.value,
-    required this.copied,
-    required this.onTap,
-  });
-
-  final PickedColor item;
-  final String value;
-  final bool copied;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final preview = item.previewPng;
-
-    return Material(
-      color: const Color(0xFFF7F0E4),
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          padding: const EdgeInsets.all(12),
-          child: Row(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFD4C2A2)),
-                  color: item.color,
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: preview == null
-                    ? null
-                    : Image.memory(
-                        preview,
-                        fit: BoxFit.cover,
-                        filterQuality: FilterQuality.none,
+              Align(
+                alignment: Alignment.centerLeft,
+                child: CupertinoSlidingSegmentedControl<ColorFormat>(
+                  groupValue: _format,
+                  children: {
+                    for (final item in ColorFormat.values)
+                      item: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        child: Text(item.label),
                       ),
+                  },
+                  onValueChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _format = value;
+                      });
+                      _syncMenu();
+                    }
+                  },
+                ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(height: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Menlo',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2E2923),
+                child: _NativePanel(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: <Widget>[
+                      Expanded(
+                        child: _history.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'Use Pick in the toolbar to capture a color.',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: const Color(0xFF6B7280),
+                                      ),
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.all(10),
+                                itemBuilder: (context, index) {
+                                  final item = _history[index];
+                                  return _HistoryRow(
+                                    item: item,
+                                    format: _format,
+                                    copied: _lastCopiedId == item.id,
+                                    onTap: () => _copyColor(item),
+                                  );
+                                },
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 8),
+                                itemCount: _history.length,
+                              ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _formatColor(item, ColorFormat.hex),
-                      style: const TextStyle(
-                        fontFamily: 'Menlo',
-                        fontSize: 12,
-                        color: Color(0xFF665E55),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _timestamp(item.pickedAt),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF7A7269),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: copied
-                      ? const Color(0xFFDCE7D3)
-                      : const Color(0xFFF0E4CF),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: copied
-                        ? const Color(0xFF6A7F5F)
-                        : const Color(0xFFD4C2A2),
+              const SizedBox(height: 12),
+              Row(
+                children: <Widget>[
+                  Text(
+                    _history.isEmpty ? '0 picks' : '${_history.length} picks',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
                   ),
-                ),
-                child: Text(
-                  copied ? 'Copied' : 'Copy',
-                  style: TextStyle(
-                    fontFamily: 'Menlo',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: copied
-                        ? const Color(0xFF496042)
-                        : const Color(0xFF6A5A44),
+                  const Spacer(),
+                  FilledButton.tonal(
+                    onPressed: _history.isEmpty ? null : _clearHistory,
+                    child: const Text('Clear History'),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -596,11 +286,184 @@ class _HistoryTile extends StatelessWidget {
   }
 }
 
-String _timestamp(DateTime value) {
-  final hour = value.hour.toString().padLeft(2, '0');
-  final minute = value.minute.toString().padLeft(2, '0');
-  final second = value.second.toString().padLeft(2, '0');
-  return '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')} $hour:$minute:$second';
+class _HistoryRow extends StatefulWidget {
+  const _HistoryRow({
+    required this.item,
+    required this.format,
+    required this.copied,
+    required this.onTap,
+  });
+
+  final PickedColor item;
+  final ColorFormat format;
+  final bool copied;
+  final VoidCallback onTap;
+
+  @override
+  State<_HistoryRow> createState() => _HistoryRowState();
+}
+
+class _HistoryRowState extends State<_HistoryRow> {
+  bool _hovered = false;
+  int _copiedBurst = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final showTrailing = _hovered;
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: MouseRegion(
+        onEnter: (_) => setState(() {
+          _hovered = true;
+        }),
+        onExit: (_) => setState(() {
+          _hovered = false;
+        }),
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _copiedBurst++;
+            });
+            widget.onTap();
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: widget.item.color,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0x14000000)),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: widget.item.previewPng == null
+                      ? null
+                      : Image.memory(
+                          widget.item.previewPng!,
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.none,
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        _formatColor(widget.item, widget.format),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontFamily: 'SF Mono',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: widget.item.color,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: const Color(0x14000000)),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _formatColor(widget.item, ColorFormat.hex),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: const Color(0xFF6B7280)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 28,
+                  height: 24,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.centerRight,
+                    children: <Widget>[
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 120),
+                        opacity: showTrailing ? 1 : 0,
+                        child: const Icon(
+                          Icons.content_copy_rounded,
+                          size: 18,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                      if (_copiedBurst > 0)
+                        TweenAnimationBuilder<double>(
+                          key: ValueKey<int>(_copiedBurst),
+                          tween: Tween<double>(begin: 0, end: 1),
+                          duration: const Duration(milliseconds: 360),
+                          builder: (context, value, child) {
+                            return Transform.translate(
+                              offset: Offset(0, -8 * value),
+                              child: Opacity(
+                                opacity: 1 - value,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: const Icon(
+                            Icons.content_copy_rounded,
+                            size: 18,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NativePanel extends StatelessWidget {
+  const _NativePanel({
+    required this.child,
+    this.padding = const EdgeInsets.all(14),
+  });
+
+  final Widget child;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFDFDFE),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x11000000)),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
 }
 
 String _formatColor(PickedColor item, ColorFormat format) {
