@@ -158,6 +158,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   @IBOutlet weak var applicationMenu: NSMenu!
   @IBOutlet weak var mainWindow: MainWindow!
 
+  private var isMainWindowAlwaysOnTop = false
   private weak var historyController: ColorHistoryViewController?
   private lazy var screenColorPicker = ScreenColorPicker(
     hideWindow: { [weak self] in
@@ -244,6 +245,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   func configureMainWindow(window: NSWindow, controller: ColorHistoryViewController) {
     window.delegate = self
     historyController = controller
+    controller.setAlwaysOnTop(isMainWindowAlwaysOnTop)
+    applyMainWindowLevel()
     statusBarController.install()
     controller.onRecentPicksChanged = { [weak self] picks in
       self?.statusBarController.updateRecentPicks(picks)
@@ -310,6 +313,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     screenColorPicker.start()
   }
 
+  @objc
+  func toggleAlwaysOnTopFromToolbar(_ sender: Any?) {
+    isMainWindowAlwaysOnTop.toggle()
+    historyController?.setAlwaysOnTop(isMainWindowAlwaysOnTop)
+    applyMainWindowLevel()
+  }
+
   private func handlePickedColor(_ payload: [String: Any]) {
     guard
       let red = payload["r"] as? Int,
@@ -339,11 +349,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
       return
     }
 
+    applyMainWindowLevel()
     NSApp.activate(ignoringOtherApps: true)
     window.makeKeyAndOrderFront(nil)
   }
 
   private func hideMainWindow() {
     mainWindow?.orderOut(nil)
+  }
+
+  private func applyMainWindowLevel() {
+    guard let window = mainWindow else {
+      return
+    }
+
+    window.level = isMainWindowAlwaysOnTop ? .floating : .normal
   }
 }
