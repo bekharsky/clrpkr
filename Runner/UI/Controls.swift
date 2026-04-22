@@ -6,6 +6,50 @@ final class HeaderBarView: NSView {
   }
 }
 
+final class PalettePagerCardView: NSView {
+  var onSwipeLeft: (() -> Void)?
+  var onSwipeRight: (() -> Void)?
+  private var didTriggerTrackpadPage = false
+
+  override func swipe(with event: NSEvent) {
+    if event.deltaX > 0 {
+      onSwipeLeft?()
+    } else if event.deltaX < 0 {
+      onSwipeRight?()
+    } else {
+      super.swipe(with: event)
+    }
+  }
+
+  override func scrollWheel(with event: NSEvent) {
+    let phase = event.phase
+    let momentumPhase = event.momentumPhase
+    if phase == .began || momentumPhase == .began {
+      didTriggerTrackpadPage = false
+    }
+
+    let horizontalDelta = event.scrollingDeltaX
+    let verticalDelta = event.scrollingDeltaY
+    let isMostlyHorizontal = abs(horizontalDelta) > abs(verticalDelta) && abs(horizontalDelta) > 6
+
+    if isMostlyHorizontal && !didTriggerTrackpadPage {
+      didTriggerTrackpadPage = true
+      if horizontalDelta > 0 {
+        onSwipeLeft?()
+      } else {
+        onSwipeRight?()
+      }
+      return
+    }
+
+    if phase == .ended || phase == .cancelled || momentumPhase == .ended || momentumPhase == .cancelled {
+      didTriggerTrackpadPage = false
+    }
+
+    super.scrollWheel(with: event)
+  }
+}
+
 final class TrafficLightButton: NSButton {
   private var trackingAreaRef: NSTrackingArea?
   private var isHovering = false
@@ -622,5 +666,27 @@ final class PaletteSwatchButton: NSButton {
     NSColor.black.withAlphaComponent(isHighlighted ? 0.18 : 0.10).setStroke()
     path.lineWidth = 1
     path.stroke()
+  }
+
+  func animateCopyBurst() {
+    let clone = NSView(frame: convert(bounds, to: superview))
+    clone.wantsLayer = true
+    clone.layer?.cornerRadius = 11
+    clone.layer?.masksToBounds = true
+    clone.layer?.backgroundColor = color.cgColor
+    clone.layer?.borderWidth = 1
+    clone.layer?.borderColor = NSColor.black.withAlphaComponent(0.10).cgColor
+    superview?.addSubview(clone)
+
+    NSAnimationContext.runAnimationGroup { context in
+      context.duration = 0.35
+      context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+      clone.animator().alphaValue = 0
+      var frame = clone.frame
+      frame.origin.y += 14
+      clone.animator().frame = frame
+    } completionHandler: {
+      clone.removeFromSuperview()
+    }
   }
 }
