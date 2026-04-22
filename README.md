@@ -1,25 +1,34 @@
 # ClrPkr
 
-ClrPkr is a native macOS colour picker with a menu bar presence, a native lens-style picker overlay, selectable output formats, and a custom AppKit history window.
+ClrPkr is a native macOS color picker with a menu bar presence, a lens-style picker overlay, selectable output formats, and a custom AppKit history window.
 
-## Features
+## Build
 
-- Native macOS picker overlay that samples any on-screen pixel.
-- Native AppKit utility window with format switching, hover states, and copy interactions.
-- History list with preview snippets for earlier picks.
-- Click any history row to copy the selected format to the clipboard.
-- Menu bar app behavior via a system status item.
-
-## Run
+Build a debug app bundle with Xcode's command line tools:
 
 ```bash
-xcodebuild -project Runner.xcodeproj -scheme Runner -configuration Debug -derivedDataPath build/native build
+xcodebuild -project Runner.xcodeproj -scheme Runner -configuration Debug -destination 'platform=macOS' -derivedDataPath build/debug build
 ```
 
 The built app will be at:
 
 ```bash
-build/native/Build/Products/Debug/clrpkr.app
+build/debug/Build/Products/Debug/clrpkr.app
 ```
+
+## Test
+
+Run the XCTest target from the command line:
+
+```bash
+xcodebuild -project Runner.xcodeproj -scheme Runner -destination 'platform=macOS' -derivedDataPath build/test test
+```
+
+The test suite covers:
+
+- Color string formatting for `HEX`, `RGB`, `HSL`, and SwiftUI output
+- Lens overlay frame placement near normal and edge-of-screen positions
+
+## Notes
 
 On the first real pick, macOS will likely ask for Screen Recording permission so the app can sample pixels outside its own window.

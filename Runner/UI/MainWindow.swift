@@ -1181,7 +1181,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   }
 }
 
-private func formatColor(_ item: PickedColor, format: ColorFormat) -> String {
+func formatColor(_ item: PickedColor, format: ColorFormat) -> String {
   switch format {
   case .hex:
     return String(format: "#%02X%02X%02X", item.red, item.green, item.blue)
@@ -1199,7 +1199,7 @@ private func formatColor(_ item: PickedColor, format: ColorFormat) -> String {
   }
 }
 
-private func formatHsl(_ item: PickedColor) -> String {
+func formatHsl(_ item: PickedColor) -> String {
   let red = Double(item.red) / 255
   let green = Double(item.green) / 255
   let blue = Double(item.blue) / 255
