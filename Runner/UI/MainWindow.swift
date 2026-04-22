@@ -1,6 +1,6 @@
 import Cocoa
 
-class MainWindow: NSWindow {
+final class MainWindow: NSWindow {
   private(set) var historyViewController: ColorHistoryViewController?
   private let chromeBackgroundColor = NSColor(
     srgbRed: 0.945,
@@ -28,6 +28,12 @@ class MainWindow: NSWindow {
       appDelegate.configureMainWindow(window: self, controller: historyViewController)
     }
 
+    configureWindow()
+    super.awakeFromNib()
+    styleWindowFrame()
+  }
+
+  private func configureWindow() {
     styleMask = [.borderless, .fullSizeContentView]
     title = "ClrPkr"
     titleVisibility = .hidden
@@ -39,9 +45,9 @@ class MainWindow: NSWindow {
     setContentSize(NSSize(width: 360, height: 470))
     minSize = NSSize(width: 330, height: 380)
     center()
+  }
 
-    super.awakeFromNib()
-
+  private func styleWindowFrame() {
     if let frameView = contentView?.superview {
       frameView.wantsLayer = true
       frameView.layer?.cornerRadius = 14
@@ -49,5 +55,4 @@ class MainWindow: NSWindow {
       frameView.layer?.backgroundColor = chromeBackgroundColor.cgColor
     }
   }
-
 }

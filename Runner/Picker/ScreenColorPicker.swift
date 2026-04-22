@@ -1,9 +1,17 @@
 import Cocoa
 
+struct PickedColorPayload {
+  let red: Int
+  let green: Int
+  let blue: Int
+  let hex: String
+  let previewPng: Data
+}
+
 final class ScreenColorPicker {
   private let hideWindow: () -> Void
   private let showWindow: () -> Void
-  private let onPick: ([String: Any]) -> Void
+  private let onPick: (PickedColorPayload) -> Void
   private var overlayPanels: [PickerOverlayPanel] = []
   private var lensPanel: PickerLensPanel?
   private var lensView: PickerLensView?
@@ -11,7 +19,7 @@ final class ScreenColorPicker {
   init(
     hideWindow: @escaping () -> Void,
     showWindow: @escaping () -> Void,
-    onPick: @escaping ([String: Any]) -> Void
+    onPick: @escaping (PickedColorPayload) -> Void
   ) {
     self.hideWindow = hideWindow
     self.showWindow = showWindow
@@ -69,17 +77,17 @@ final class ScreenColorPicker {
   }
 
   fileprivate func complete(with sample: PixelSample) {
-    let payload: [String: Any] = [
-      "r": sample.red,
-      "g": sample.green,
-      "b": sample.blue,
-      "hex": sample.hex,
-      "previewPng": sample.previewPng
-    ]
-
     tearDownOverlay()
     showWindow()
-    onPick(payload)
+    onPick(
+      PickedColorPayload(
+        red: sample.red,
+        green: sample.green,
+        blue: sample.blue,
+        hex: sample.hex,
+        previewPng: sample.previewPng
+      )
+    )
   }
 
   func cancel() {
