@@ -3,8 +3,8 @@ import Cocoa
 class NativePanelView: NSView {
   private let dropOverlayView = DropOverlayView()
   private let dropIconView = NSImageView()
-  private let dropLabel = NSTextField(labelWithString: "Drop image here to extract a palette")
-  private let dropHintLabel = NSTextField(labelWithString: "We’ll pull dominant colors into Imported Palette")
+  private let dropLabel = NSTextField(labelWithString: "Drop images here to extract palettes")
+  private let dropHintLabel = NSTextField(labelWithString: "We’ll pull dominant colors into Imported Palettes")
   private var isDropTargetActive = false {
     didSet { needsDisplay = true }
   }
@@ -181,7 +181,7 @@ final class DropOverlayView: NSView {
 
 final class WholeWindowDropView: NSView {
   private static let supportedDragTypes: [NSPasteboard.PasteboardType] = [.fileURL, .tiff]
-  var onDropImage: ((NSImage) -> Void)?
+  var onDropImages: (([NSImage]) -> Void)?
   var onDropStateChanged: ((Bool) -> Void)?
 
   var wantsPeriodicDraggingUpdates: Bool {
@@ -238,11 +238,12 @@ final class WholeWindowDropView: NSView {
       onDropStateChanged?(false)
     }
 
-    guard let image = image(from: sender.draggingPasteboard) else {
+    let images = images(from: sender.draggingPasteboard)
+    guard !images.isEmpty else {
       return false
     }
 
-    onDropImage?(image)
+    onDropImages?(images)
     return true
   }
 
@@ -258,19 +259,19 @@ final class WholeWindowDropView: NSView {
     return pasteboard.data(forType: .tiff) != nil
   }
 
-  private func image(from pasteboard: NSPasteboard) -> NSImage? {
-    if
-      let items = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
-      let imageURL = items.first(where: { NSImage(contentsOf: $0) != nil })
-    {
-      return NSImage(contentsOf: imageURL)
+  private func images(from pasteboard: NSPasteboard) -> [NSImage] {
+    if let items = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
+      let images = items.compactMap(NSImage.init(contentsOf:))
+      if !images.isEmpty {
+        return images
+      }
     }
 
     if let data = pasteboard.data(forType: .tiff) {
-      return NSImage(data: data)
+      return NSImage(data: data).map { [$0] } ?? []
     }
 
-    return nil
+    return []
   }
 }
 

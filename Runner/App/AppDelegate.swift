@@ -159,6 +159,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   @IBOutlet weak var mainWindow: MainWindow!
 
   private var isMainWindowAlwaysOnTop = false
+  private var hasRequestedScreenCaptureAccessThisLaunch = false
   private weak var historyController: ColorHistoryViewController?
   private lazy var screenColorPicker = ScreenColorPicker(
     hideWindow: { [weak self] in
@@ -194,6 +195,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     refreshStatusBar()
     DispatchQueue.main.async { [weak self] in
       self?.showMainWindow()
+      self?.requestScreenCaptureAccessIfNeeded()
     }
   }
 
@@ -286,6 +288,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   }
 
   @objc
+  func importImagesFromToolbar(_ sender: Any?) {
+    guard let controller = historyController ?? mainWindow?.historyViewController else {
+      return
+    }
+
+    let panel = NSOpenPanel()
+    panel.canChooseFiles = true
+    panel.canChooseDirectories = true
+    panel.allowsMultipleSelection = true
+    panel.resolvesAliases = true
+    panel.prompt = "Import"
+    panel.message = "Choose image files or folders to build imported palettes."
+
+    let nestedFoldersButton = NSButton(checkboxWithTitle: "Analyze nested folders", target: nil, action: nil)
+    nestedFoldersButton.state = .off
+    panel.accessoryView = nestedFoldersButton
+
+    let previousPolicy = NSApp.activationPolicy()
+    let switchedToRegular = previousPolicy != .regular && NSApp.setActivationPolicy(.regular)
+
+    showMainWindow()
+    NSApp.activate(ignoringOtherApps: true)
+
+    if panel.runModal() == .OK {
+      controller.importSelectedItems(
+        at: panel.urls,
+        includesNestedFolders: nestedFoldersButton.state == .on
+      )
+    }
+
+    if switchedToRegular {
+      DispatchQueue.main.async {
+        NSApp.setActivationPolicy(previousPolicy)
+      }
+    }
+  }
+
+  @objc
   func toggleAlwaysOnTopFromToolbar(_ sender: Any?) {
     isMainWindowAlwaysOnTop.toggle()
     historyController?.setAlwaysOnTop(isMainWindowAlwaysOnTop)
@@ -333,5 +373,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     DispatchQueue.main.async { [weak self] in
       self?.statusBarController.install()
     }
+  }
+
+  private func requestScreenCaptureAccessIfNeeded() {
+    guard !hasRequestedScreenCaptureAccessThisLaunch else {
+      return
+    }
+
+    hasRequestedScreenCaptureAccessThisLaunch = true
+
+    guard #available(macOS 10.15, *) else {
+      return
+    }
+
+    guard !CGPreflightScreenCaptureAccess() else {
+      return
+    }
+
+    NSApp.activate(ignoringOtherApps: true)
+    _ = CGRequestScreenCaptureAccess()
   }
 }
