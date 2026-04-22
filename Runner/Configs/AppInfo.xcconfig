@@ -1,0 +1,10 @@
+// Application-level settings for the macOS target.
+
+// The application's name.
+PRODUCT_NAME = clrpkr
+
+// The application's bundle identifier
+PRODUCT_BUNDLE_IDENTIFIER = com.example.clrpkr
+
+// The copyright displayed in application information
+PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
