@@ -26,6 +26,12 @@ enum CopyBurstAnimator {
 
 final class HeaderBarView: NSView {
   override var mouseDownCanMoveWindow: Bool {
+    false
+  }
+}
+
+final class HeaderDragHandleView: NSView {
+  override var mouseDownCanMoveWindow: Bool {
     true
   }
 }

@@ -12,6 +12,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   private let headerView = HeaderBarView()
   private let titleLabel = NSTextField(labelWithString: "ClrPkr")
   private let pickButton = HeaderPickButton(title: "", target: nil, action: nil)
+  private let importButton = HeaderPickButton(title: "", target: nil, action: nil)
   private let pinButton = HeaderPickButton(title: "", target: nil, action: nil)
   private let closeButton = TrafficLightButton(title: "", target: nil, action: nil)
   private let formatPicker = FormatPickerView()
@@ -45,8 +46,8 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
 
   override func loadView() {
     view = NSView()
-    dropCaptureView.onDropImage = { [weak self] image in
-      self?.handleDroppedImage(image)
+    dropCaptureView.onDropImages = { [weak self] images in
+      self?.importImages(images)
     }
     dropCaptureView.onDropStateChanged = { [weak self] isActive in
       self?.updateDropOverlayState(isActive)
@@ -178,7 +179,24 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
       pinButton.title = "Top"
     }
 
-    let headerSpacer = NSView()
+    importButton.toolTip = "Import image file or folder"
+    importButton.target = NSApp.delegate
+    importButton.action = #selector(AppDelegate.importImagesFromToolbar(_:))
+    importButton.translatesAutoresizingMaskIntoConstraints = false
+    if #available(macOS 11.0, *) {
+      let image = NSImage(
+        systemSymbolName: "folder.badge.plus",
+        accessibilityDescription: "Import image source"
+      )
+      let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+      importButton.image = image?.withSymbolConfiguration(config)
+      importButton.image?.isTemplate = true
+      importButton.imagePosition = .imageOnly
+    } else {
+      importButton.title = "Import"
+    }
+
+    let headerSpacer = HeaderDragHandleView()
     headerSpacer.translatesAutoresizingMaskIntoConstraints = false
     headerSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
     headerSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -188,6 +206,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
       titleLabel,
       headerSpacer,
       pinButton,
+      importButton,
       pickButton
     ])
     headerStack.orientation = .horizontal
@@ -201,6 +220,8 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
       closeButton.heightAnchor.constraint(equalToConstant: 13.5),
       pinButton.widthAnchor.constraint(equalToConstant: 44),
       pinButton.heightAnchor.constraint(equalToConstant: 28),
+      importButton.widthAnchor.constraint(equalToConstant: 44),
+      importButton.heightAnchor.constraint(equalToConstant: 28),
       pickButton.widthAnchor.constraint(equalToConstant: 44),
       pickButton.heightAnchor.constraint(equalToConstant: 28),
       headerStack.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 4),
@@ -462,16 +483,8 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     refreshInterface()
   }
 
-  private func handleDroppedImage(_ image: NSImage) {
-    let colors = ImagePaletteExtractor.extractPalette(from: image).map(\.color)
-    guard !colors.isEmpty else {
-      return
-    }
-    addPalette(colors: colors, previewImage: image)
-  }
-
-  func importDroppedImage(_ image: NSImage) {
-    handleDroppedImage(image)
+  func importSelectedItems(at urls: [URL], includesNestedFolders: Bool) {
+    importItems(at: urls, includesNestedFolders: includesNestedFolders)
   }
 
   private func refreshImportedPaletteSection() {
@@ -633,6 +646,76 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
 
   private func prependToHistory(_ items: [PickedColor]) {
     history.insert(contentsOf: items, at: 0)
+  }
+
+  private func importItems(at urls: [URL], includesNestedFolders: Bool) {
+    importImages(loadImportableImages(from: urls, includesNestedFolders: includesNestedFolders))
+  }
+
+  private func importImages(_ images: [NSImage]) {
+    guard !images.isEmpty else {
+      return
+    }
+
+    for image in images.reversed() {
+      let colors = ImagePaletteExtractor.extractPalette(from: image).map(\.color)
+      guard !colors.isEmpty else {
+        continue
+      }
+      addPalette(colors: colors, previewImage: image)
+    }
+  }
+
+  private func loadImportableImages(from urls: [URL], includesNestedFolders: Bool) -> [NSImage] {
+    expandedImportURLs(from: urls, includesNestedFolders: includesNestedFolders).compactMap(NSImage.init(contentsOf:))
+  }
+
+  private func expandedImportURLs(from urls: [URL], includesNestedFolders: Bool) -> [URL] {
+    var collectedFiles: [URL] = []
+    let fileManager = FileManager.default
+
+    for url in urls {
+      var isDirectory: ObjCBool = false
+      guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+        continue
+      }
+
+      if isDirectory.boolValue {
+        if includesNestedFolders {
+          let enumerator = fileManager.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+          )
+          while let nestedURL = enumerator?.nextObject() as? URL {
+            guard isImportableImageFile(at: nestedURL) else {
+              continue
+            }
+            collectedFiles.append(nestedURL)
+          }
+        } else if let directoryContents = try? fileManager.contentsOfDirectory(
+          at: url,
+          includingPropertiesForKeys: [.isRegularFileKey],
+          options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) {
+          for childURL in directoryContents where isImportableImageFile(at: childURL) {
+            collectedFiles.append(childURL)
+          }
+        }
+      } else if isImportableImageFile(at: url) {
+        collectedFiles.append(url)
+      }
+    }
+
+    return collectedFiles.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+  }
+
+  private func isImportableImageFile(at url: URL) -> Bool {
+    guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey]), values.isRegularFile == true else {
+      return false
+    }
+
+    return NSImage(contentsOf: url) != nil
   }
 
   private func clearImportedPalettes() {
