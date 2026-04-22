@@ -4,8 +4,8 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   var onRecentPicksChanged: (([RecentPickMenuItem]) -> Void)?
 
   private var history: [PickedColor] = []
-  private var importedPalette: [PickedColor] = []
-  private var importedPalettePreviewImage: NSImage?
+  private var importedPalettes: [ImportedPalette] = []
+  private var currentImportedPaletteIndex = 0
   private var isImportedPaletteVisible = false
   private var format: ColorFormat = .hex
 
@@ -17,11 +17,14 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   private let formatPicker = FormatPickerView()
   private let dropCaptureView = WholeWindowDropView()
   private let panelView = NativePanelView()
-  private let importedPaletteCard = NSView()
+  private let importedPaletteCard = PalettePagerCardView()
   private let importedPaletteThumbnailView = AspectFillImageView()
   private let importedPaletteTitle = NSTextField(labelWithString: "Imported Palette")
   private let importedPaletteSubtitle = NSTextField(labelWithString: "Click a swatch to copy in the selected format")
   private let importedPaletteRemoveButton = NSButton(title: "", target: nil, action: nil)
+  private let importedPalettePreviousButton = NSButton(title: "", target: nil, action: nil)
+  private let importedPaletteNextButton = NSButton(title: "", target: nil, action: nil)
+  private let importedPalettePageLabel = NSTextField(labelWithString: "1 of 1")
   private let importedPaletteStrip = NSStackView()
   private let scrollView = NSScrollView()
   private let tableView = NSTableView()
@@ -80,8 +83,15 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
       )
     }
 
-    importedPalette = items
-    importedPalettePreviewImage = previewImage
+    importedPalettes.insert(
+      ImportedPalette(
+        colors: items,
+        previewImage: previewImage,
+        importedAt: Date()
+      ),
+      at: 0
+    )
+    currentImportedPaletteIndex = 0
     isImportedPaletteVisible = true
     history.insert(contentsOf: items, at: 0)
     refreshInterface()
@@ -264,12 +274,21 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
       alpha: 1
     ).cgColor
     importedPaletteCard.translatesAutoresizingMaskIntoConstraints = false
+    importedPaletteCard.onSwipeLeft = { [weak self] in
+      self?.showImportedPalette(at: (self?.currentImportedPaletteIndex ?? 0) + 1)
+    }
+    importedPaletteCard.onSwipeRight = { [weak self] in
+      self?.showImportedPalette(at: (self?.currentImportedPaletteIndex ?? 0) - 1)
+    }
 
     importedPaletteThumbnailView.translatesAutoresizingMaskIntoConstraints = false
 
     importedPaletteTitle.font = NSFont.systemFont(ofSize: 12, weight: .semibold)
     importedPaletteSubtitle.font = NSFont.systemFont(ofSize: 11)
     importedPaletteSubtitle.textColor = NSColor.secondaryLabelColor
+    importedPalettePageLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium)
+    importedPalettePageLabel.textColor = NSColor.secondaryLabelColor
+    importedPalettePageLabel.alignment = .center
     importedPaletteRemoveButton.bezelStyle = .texturedRounded
     importedPaletteRemoveButton.controlSize = .small
     importedPaletteRemoveButton.target = self
@@ -288,12 +307,41 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
       importedPaletteRemoveButton.title = "x"
     }
 
+    configureImportedPalettePagerButton(
+      importedPalettePreviousButton,
+      symbolName: "chevron.left",
+      fallbackTitle: "<",
+      tooltip: "Previous imported palette",
+      action: #selector(handleShowPreviousImportedPalette(_:))
+    )
+    configureImportedPalettePagerButton(
+      importedPaletteNextButton,
+      symbolName: "chevron.right",
+      fallbackTitle: ">",
+      tooltip: "Next imported palette",
+      action: #selector(handleShowNextImportedPalette(_:))
+    )
+
     importedPaletteStrip.orientation = .horizontal
     importedPaletteStrip.spacing = 8
     importedPaletteStrip.alignment = .centerY
     importedPaletteStrip.translatesAutoresizingMaskIntoConstraints = false
 
-    let importedPaletteText = NSStackView(views: [importedPaletteTitle, importedPaletteSubtitle])
+    let importedPalettePager = NSStackView(views: [
+      importedPalettePreviousButton,
+      importedPalettePageLabel,
+      importedPaletteNextButton
+    ])
+    importedPalettePager.orientation = .horizontal
+    importedPalettePager.spacing = 4
+    importedPalettePager.alignment = .centerY
+    importedPalettePager.translatesAutoresizingMaskIntoConstraints = false
+
+    let importedPaletteText = NSStackView(views: [
+      importedPaletteTitle,
+      importedPaletteSubtitle,
+      importedPalettePager
+    ])
     importedPaletteText.orientation = .vertical
     importedPaletteText.spacing = 2
     importedPaletteText.alignment = .leading
@@ -311,6 +359,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
       importedPaletteText.leadingAnchor.constraint(equalTo: importedPaletteThumbnailView.trailingAnchor, constant: 10),
       importedPaletteText.trailingAnchor.constraint(lessThanOrEqualTo: importedPaletteRemoveButton.leadingAnchor, constant: -8),
       importedPaletteText.topAnchor.constraint(equalTo: importedPaletteCard.topAnchor, constant: 12),
+      importedPalettePageLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 42),
       importedPaletteRemoveButton.topAnchor.constraint(equalTo: importedPaletteCard.topAnchor, constant: 10),
       importedPaletteRemoveButton.trailingAnchor.constraint(equalTo: importedPaletteCard.trailingAnchor, constant: -10),
       importedPaletteStrip.leadingAnchor.constraint(equalTo: importedPaletteThumbnailView.trailingAnchor, constant: 10),
@@ -386,15 +435,28 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   @objc
   private func handleClearHistory(_ sender: Any?) {
     history.removeAll()
-    importedPalette.removeAll()
-    importedPalettePreviewImage = nil
+    importedPalettes.removeAll()
+    currentImportedPaletteIndex = 0
     isImportedPaletteVisible = false
     refreshInterface()
   }
 
   @objc
   private func handleRemoveImportedPalette(_ sender: Any?) {
-    isImportedPaletteVisible = false
+    guard importedPalettes.indices.contains(currentImportedPaletteIndex) else {
+      isImportedPaletteVisible = false
+      refreshInterface()
+      return
+    }
+
+    importedPalettes.remove(at: currentImportedPaletteIndex)
+    if importedPalettes.isEmpty {
+      isImportedPaletteVisible = false
+      currentImportedPaletteIndex = 0
+    } else {
+      currentImportedPaletteIndex = min(currentImportedPaletteIndex, importedPalettes.count - 1)
+      isImportedPaletteVisible = true
+    }
     refreshInterface()
   }
 
@@ -411,18 +473,28 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   }
 
   private func refreshImportedPaletteSection() {
-    importedPaletteCard.isHidden = importedPalette.isEmpty || !isImportedPaletteVisible
-    importedPaletteThumbnailView.image = importedPalettePreviewImage
-    importedPaletteSubtitle.stringValue = importedPalette.isEmpty
-      ? "Drop an image to build a grouped palette"
-      : "Click a swatch to copy as \(format.label)"
+    let hasImportedPalettes = !importedPalettes.isEmpty && isImportedPaletteVisible
+    importedPaletteCard.isHidden = !hasImportedPalettes
 
-    importedPaletteStrip.arrangedSubviews.forEach { view in
-      importedPaletteStrip.removeArrangedSubview(view)
-      view.removeFromSuperview()
+    guard hasImportedPalettes, let importedPalette = currentImportedPalette else {
+      importedPaletteThumbnailView.image = nil
+      importedPalettePageLabel.stringValue = "0 of 0"
+      importedPaletteSubtitle.stringValue = "Drop an image to build a grouped palette"
+      importedPalettePreviousButton.isEnabled = false
+      importedPaletteNextButton.isEnabled = false
+      clearImportedPaletteStrip()
+      return
     }
 
-    for item in importedPalette {
+    importedPaletteThumbnailView.image = importedPalette.previewImage
+    importedPaletteSubtitle.stringValue = "Click a swatch to copy as \(format.label)"
+    importedPalettePageLabel.stringValue = "\(currentImportedPaletteIndex + 1) of \(importedPalettes.count)"
+    importedPalettePreviousButton.isEnabled = currentImportedPaletteIndex > 0
+    importedPaletteNextButton.isEnabled = currentImportedPaletteIndex < (importedPalettes.count - 1)
+
+    clearImportedPaletteStrip()
+
+    for item in importedPalette.colors {
       let button = PaletteSwatchButton(frame: .zero)
       button.color = item.rgbColor
       button.target = self
@@ -437,12 +509,23 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   private func handleImportedPaletteSwatch(_ sender: NSButton) {
     guard
       let identifier = sender.identifier?.rawValue,
-      let item = importedPalette.first(where: { $0.id.uuidString == identifier })
+      let item = currentImportedPalette?.colors.first(where: { $0.id.uuidString == identifier })
     else {
       return
     }
 
+    (sender as? PaletteSwatchButton)?.animateCopyBurst()
     copy(item: item)
+  }
+
+  @objc
+  private func handleShowPreviousImportedPalette(_ sender: Any?) {
+    showImportedPalette(at: currentImportedPaletteIndex - 1)
+  }
+
+  @objc
+  private func handleShowNextImportedPalette(_ sender: Any?) {
+    showImportedPalette(at: currentImportedPaletteIndex + 1)
   }
 
   @objc
@@ -514,6 +597,53 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     if tableView.selectedRow >= 0 {
       copySelectedRow()
       tableView.deselectAll(nil)
+    }
+  }
+
+  private var currentImportedPalette: ImportedPalette? {
+    guard importedPalettes.indices.contains(currentImportedPaletteIndex) else {
+      return nil
+    }
+    return importedPalettes[currentImportedPaletteIndex]
+  }
+
+  private func clearImportedPaletteStrip() {
+    importedPaletteStrip.arrangedSubviews.forEach { view in
+      importedPaletteStrip.removeArrangedSubview(view)
+      view.removeFromSuperview()
+    }
+  }
+
+  private func showImportedPalette(at index: Int) {
+    guard importedPalettes.indices.contains(index) else {
+      return
+    }
+
+    currentImportedPaletteIndex = index
+    refreshImportedPaletteSection()
+  }
+
+  private func configureImportedPalettePagerButton(
+    _ button: NSButton,
+    symbolName: String,
+    fallbackTitle: String,
+    tooltip: String,
+    action: Selector
+  ) {
+    button.bezelStyle = .texturedRounded
+    button.controlSize = .small
+    button.target = self
+    button.action = action
+    button.toolTip = tooltip
+    button.setContentHuggingPriority(.required, for: .horizontal)
+    if #available(macOS 11.0, *) {
+      let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: tooltip)
+      let config = NSImage.SymbolConfiguration(pointSize: 10, weight: .semibold)
+      button.image = image?.withSymbolConfiguration(config)
+      button.imagePosition = .imageOnly
+      button.title = ""
+    } else {
+      button.title = fallbackTitle
     }
   }
 }

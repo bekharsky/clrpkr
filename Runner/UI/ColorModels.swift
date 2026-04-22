@@ -53,6 +53,13 @@ struct PaletteColorBucket {
   let pixelCount: Int
 }
 
+struct ImportedPalette {
+  let id = UUID()
+  let colors: [PickedColor]
+  let previewImage: NSImage?
+  let importedAt: Date
+}
+
 func formatColor(_ item: PickedColor, format: ColorFormat) -> String {
   switch format {
   case .hex:
