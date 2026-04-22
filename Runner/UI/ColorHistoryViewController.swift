@@ -39,6 +39,10 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   )
   private var isShowingDropOverlay = false
 
+  private var hasVisibleImportedPalettes: Bool {
+    !importedPalettes.isEmpty && isImportedPaletteVisible
+  }
+
   override func loadView() {
     view = NSView()
     dropCaptureView.onDropImage = { [weak self] image in
@@ -93,7 +97,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     )
     currentImportedPaletteIndex = 0
     isImportedPaletteVisible = true
-    history.insert(contentsOf: items, at: 0)
+    prependToHistory(items)
     refreshInterface()
   }
 
@@ -414,10 +418,11 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   private func refreshInterface() {
     refreshImportedPaletteSection()
     tableView.reloadData()
-    emptyLabel.isHidden = isShowingDropOverlay || !history.isEmpty
-    scrollView.isHidden = history.isEmpty
-    clearButton.isEnabled = !history.isEmpty
-    countLabel.stringValue = history.isEmpty ? "0 picks" : "\(history.count) picks"
+    let hasHistory = !history.isEmpty
+    emptyLabel.isHidden = isShowingDropOverlay || hasHistory
+    scrollView.isHidden = !hasHistory
+    clearButton.isEnabled = hasHistory
+    countLabel.stringValue = hasHistory ? "\(history.count) picks" : "0 picks"
     onRecentPicksChanged?(currentRecentPickItems())
   }
 
@@ -435,24 +440,21 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   @objc
   private func handleClearHistory(_ sender: Any?) {
     history.removeAll()
-    importedPalettes.removeAll()
-    currentImportedPaletteIndex = 0
-    isImportedPaletteVisible = false
+    clearImportedPalettes()
     refreshInterface()
   }
 
   @objc
   private func handleRemoveImportedPalette(_ sender: Any?) {
     guard importedPalettes.indices.contains(currentImportedPaletteIndex) else {
-      isImportedPaletteVisible = false
+      clearImportedPalettes()
       refreshInterface()
       return
     }
 
     importedPalettes.remove(at: currentImportedPaletteIndex)
     if importedPalettes.isEmpty {
-      isImportedPaletteVisible = false
-      currentImportedPaletteIndex = 0
+      clearImportedPalettes()
     } else {
       currentImportedPaletteIndex = min(currentImportedPaletteIndex, importedPalettes.count - 1)
       isImportedPaletteVisible = true
@@ -473,15 +475,13 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   }
 
   private func refreshImportedPaletteSection() {
-    let hasImportedPalettes = !importedPalettes.isEmpty && isImportedPaletteVisible
-    importedPaletteCard.isHidden = !hasImportedPalettes
+    importedPaletteCard.isHidden = !hasVisibleImportedPalettes
 
-    guard hasImportedPalettes, let importedPalette = currentImportedPalette else {
+    guard hasVisibleImportedPalettes, let importedPalette = currentImportedPalette else {
       importedPaletteThumbnailView.image = nil
       importedPalettePageLabel.stringValue = "0 of 0"
       importedPaletteSubtitle.stringValue = "Drop an image to build a grouped palette"
-      importedPalettePreviousButton.isEnabled = false
-      importedPaletteNextButton.isEnabled = false
+      updateImportedPaletteNavigation()
       clearImportedPaletteStrip()
       return
     }
@@ -489,8 +489,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     importedPaletteThumbnailView.image = importedPalette.previewImage
     importedPaletteSubtitle.stringValue = "Click a swatch to copy as \(format.label)"
     importedPalettePageLabel.stringValue = "\(currentImportedPaletteIndex + 1) of \(importedPalettes.count)"
-    importedPalettePreviousButton.isEnabled = currentImportedPaletteIndex > 0
-    importedPaletteNextButton.isEnabled = currentImportedPaletteIndex < (importedPalettes.count - 1)
+    updateImportedPaletteNavigation()
 
     clearImportedPaletteStrip()
 
@@ -520,12 +519,12 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
 
   @objc
   private func handleShowPreviousImportedPalette(_ sender: Any?) {
-    showImportedPalette(at: currentImportedPaletteIndex - 1)
+    navigateImportedPalette(by: -1)
   }
 
   @objc
   private func handleShowNextImportedPalette(_ sender: Any?) {
-    showImportedPalette(at: currentImportedPaletteIndex + 1)
+    navigateImportedPalette(by: 1)
   }
 
   @objc
@@ -621,6 +620,25 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
 
     currentImportedPaletteIndex = index
     refreshImportedPaletteSection()
+  }
+
+  private func navigateImportedPalette(by offset: Int) {
+    showImportedPalette(at: currentImportedPaletteIndex + offset)
+  }
+
+  private func updateImportedPaletteNavigation() {
+    importedPalettePreviousButton.isEnabled = currentImportedPaletteIndex > 0
+    importedPaletteNextButton.isEnabled = currentImportedPaletteIndex < (importedPalettes.count - 1)
+  }
+
+  private func prependToHistory(_ items: [PickedColor]) {
+    history.insert(contentsOf: items, at: 0)
+  }
+
+  private func clearImportedPalettes() {
+    importedPalettes.removeAll()
+    currentImportedPaletteIndex = 0
+    isImportedPaletteVisible = false
   }
 
   private func configureImportedPalettePagerButton(

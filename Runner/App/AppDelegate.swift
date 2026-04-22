@@ -154,7 +154,7 @@ final class StatusBarController: NSObject {
 }
 
 @main
-class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   @IBOutlet weak var applicationMenu: NSMenu!
   @IBOutlet weak var mainWindow: MainWindow!
 
@@ -189,44 +189,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
   )
 
-  override init() {
-    super.init()
-
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(handleDidFinishLaunchingNotification(_:)),
-      name: NSApplication.didFinishLaunchingNotification,
-      object: nil
-    )
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(handleDidBecomeActiveNotification(_:)),
-      name: NSApplication.didBecomeActiveNotification,
-      object: nil
-    )
-  }
-
-  deinit {
-    NotificationCenter.default.removeObserver(self)
-  }
-
-  @objc
-  private func handleDidFinishLaunchingNotification(_ notification: Notification) {
+  func applicationDidFinishLaunching(_ notification: Notification) {
     configureApplicationMenu()
-    statusBarController.install()
+    refreshStatusBar()
     DispatchQueue.main.async { [weak self] in
       self?.showMainWindow()
     }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-      self?.statusBarController.install()
-    }
   }
 
-  @objc
-  private func handleDidBecomeActiveNotification(_ notification: Notification) {
-    DispatchQueue.main.async { [weak self] in
-      self?.statusBarController.install()
-    }
+  func applicationDidBecomeActive(_ notification: Notification) {
+    refreshStatusBar()
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -247,7 +219,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     historyController = controller
     controller.setAlwaysOnTop(isMainWindowAlwaysOnTop)
     applyMainWindowLevel()
-    statusBarController.install()
+    refreshStatusBar()
     controller.onRecentPicksChanged = { [weak self] picks in
       self?.statusBarController.updateRecentPicks(picks)
     }
@@ -320,21 +292,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     applyMainWindowLevel()
   }
 
-  private func handlePickedColor(_ payload: [String: Any]) {
-    guard
-      let red = payload["r"] as? Int,
-      let green = payload["g"] as? Int,
-      let blue = payload["b"] as? Int
-    else {
-      return
-    }
-
-    let previewPng = payload["previewPng"] as? Data
+  private func handlePickedColor(_ payload: PickedColorPayload) {
     historyController?.addPick(
-      red: red,
-      green: green,
-      blue: blue,
-      previewPng: previewPng
+      red: payload.red,
+      green: payload.green,
+      blue: payload.blue,
+      previewPng: payload.previewPng
     )
   }
 
@@ -364,5 +327,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     window.level = isMainWindowAlwaysOnTop ? .floating : .normal
+  }
+
+  private func refreshStatusBar() {
+    DispatchQueue.main.async { [weak self] in
+      self?.statusBarController.install()
+    }
   }
 }

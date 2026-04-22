@@ -124,17 +124,7 @@ final class HistoryRowView: NSTableCellView {
     clone.contentTintColor = copyImageView.contentTintColor
     clone.frame = convert(copyImageView.bounds, from: copyImageView)
     clone.alphaValue = 1
-    addSubview(clone)
-
-    NSAnimationContext.runAnimationGroup { context in
-      context.duration = 0.35
-      context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-      clone.animator().alphaValue = 0
-      var frame = clone.frame
-      frame.origin.y += 14
-      clone.animator().frame = frame
-    } completionHandler: { [weak self] in
-      clone.removeFromSuperview()
+    CopyBurstAnimator.animate(view: clone, in: self) { [weak self] in
       self?.copyImageView.alphaValue = self?.isHovering == true ? 1 : 0
     }
   }

@@ -1,5 +1,29 @@
 import Cocoa
 
+enum CopyBurstAnimator {
+  static func animate(
+    view: NSView,
+    in containerView: NSView,
+    offsetY: CGFloat = 14,
+    duration: TimeInterval = 0.35,
+    completion: (() -> Void)? = nil
+  ) {
+    containerView.addSubview(view)
+
+    NSAnimationContext.runAnimationGroup { context in
+      context.duration = duration
+      context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+      view.animator().alphaValue = 0
+      var frame = view.frame
+      frame.origin.y += offsetY
+      view.animator().frame = frame
+    } completionHandler: {
+      view.removeFromSuperview()
+      completion?()
+    }
+  }
+}
+
 final class HeaderBarView: NSView {
   override var mouseDownCanMoveWindow: Bool {
     true
@@ -631,6 +655,11 @@ final class ColorSwatchView: NSView {
 }
 
 final class PaletteSwatchButton: NSButton {
+  private enum Animation {
+    static let rise: CGFloat = 24
+    static let duration: TimeInterval = 0.5
+  }
+
   var color: NSColor = .clear {
     didSet { needsDisplay = true }
   }
@@ -676,17 +705,16 @@ final class PaletteSwatchButton: NSButton {
     clone.layer?.backgroundColor = color.cgColor
     clone.layer?.borderWidth = 1
     clone.layer?.borderColor = NSColor.black.withAlphaComponent(0.10).cgColor
-    superview?.addSubview(clone)
 
-    NSAnimationContext.runAnimationGroup { context in
-      context.duration = 0.35
-      context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-      clone.animator().alphaValue = 0
-      var frame = clone.frame
-      frame.origin.y += 14
-      clone.animator().frame = frame
-    } completionHandler: {
-      clone.removeFromSuperview()
+    guard let superview else {
+      return
     }
+
+    CopyBurstAnimator.animate(
+      view: clone,
+      in: superview,
+      offsetY: Animation.rise,
+      duration: Animation.duration
+    )
   }
 }
