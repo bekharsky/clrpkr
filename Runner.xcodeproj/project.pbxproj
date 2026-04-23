@@ -11,10 +11,6 @@
 		33A1F0A12C00000100000001 /* ScreenColorPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0A02C00000100000001 /* ScreenColorPicker.swift */; };
 		33A1F0C02C00000300000001 /* ColorModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0B42C00000300000001 /* ColorModels.swift */; };
 		33A1F0C12C00000300000001 /* ImagePaletteExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0B52C00000300000001 /* ImagePaletteExtractor.swift */; };
-		33A1F0C22C00000300000001 /* DropViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0B62C00000300000001 /* DropViews.swift */; };
-		33A1F0C32C00000300000001 /* Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0B72C00000300000001 /* Controls.swift */; };
-		33A1F0C42C00000300000001 /* HistoryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0B82C00000300000001 /* HistoryRowView.swift */; };
-		33A1F0C52C00000300000001 /* ColorHistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0B92C00000300000001 /* ColorHistoryViewController.swift */; };
 		33A1F0C62C00000400000001 /* ColorNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0BA2C00000400000001 /* ColorNaming.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
 		33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F22044A3C60003C045 /* Assets.xcassets */; };
@@ -52,10 +48,6 @@
 		33A1F0A02C00000100000001 /* ScreenColorPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenColorPicker.swift; sourceTree = "<group>"; };
 		33A1F0B42C00000300000001 /* ColorModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorModels.swift; sourceTree = "<group>"; };
 		33A1F0B52C00000300000001 /* ImagePaletteExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePaletteExtractor.swift; sourceTree = "<group>"; };
-		33A1F0B62C00000300000001 /* DropViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropViews.swift; sourceTree = "<group>"; };
-		33A1F0B72C00000300000001 /* Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Controls.swift; sourceTree = "<group>"; };
-		33A1F0B82C00000300000001 /* HistoryRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryRowView.swift; sourceTree = "<group>"; };
-		33A1F0B92C00000300000001 /* ColorHistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorHistoryViewController.swift; sourceTree = "<group>"; };
 		33A1F0BA2C00000400000001 /* ColorNaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorNaming.swift; sourceTree = "<group>"; };
 		33CC10ED2044A3C60003C045 /* clrpkr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = clrpkr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		33CC10F02044A3C60003C045 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -115,12 +107,8 @@
 		33A1F0B22C00000200000001 /* UI */ = {
 			isa = PBXGroup;
 			children = (
-				33A1F0B92C00000300000001 /* ColorHistoryViewController.swift */,
 				33A1F0BA2C00000400000001 /* ColorNaming.swift */,
-				33A1F0B72C00000300000001 /* Controls.swift */,
 				33A1F0B42C00000300000001 /* ColorModels.swift */,
-				33A1F0B62C00000300000001 /* DropViews.swift */,
-				33A1F0B82C00000300000001 /* HistoryRowView.swift */,
 				33A1F0B52C00000300000001 /* ImagePaletteExtractor.swift */,
 				33CC11122044BFA00003C045 /* MainWindow.swift */,
 			);
@@ -298,12 +286,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				33A1F0C52C00000300000001 /* ColorHistoryViewController.swift in Sources */,
 				33A1F0C62C00000400000001 /* ColorNaming.swift in Sources */,
-				33A1F0C32C00000300000001 /* Controls.swift in Sources */,
 				33A1F0C02C00000300000001 /* ColorModels.swift in Sources */,
-				33A1F0C22C00000300000001 /* DropViews.swift in Sources */,
-				33A1F0C42C00000300000001 /* HistoryRowView.swift in Sources */,
 				33A1F0C12C00000300000001 /* ImagePaletteExtractor.swift in Sources */,
 				33CC11132044BFA00003C045 /* MainWindow.swift in Sources */,
 				33A1F0A12C00000100000001 /* ScreenColorPicker.swift in Sources */,
