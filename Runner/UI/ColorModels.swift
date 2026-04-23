@@ -20,7 +20,7 @@ enum ColorFormat: Int, CaseIterable {
   }
 }
 
-struct PickedColor {
+struct PickedColor: Identifiable {
   let id = UUID()
   let color: NSColor
   let previewImage: NSImage?
@@ -61,7 +61,7 @@ struct PaletteColorBucket {
   let pixelCount: Int
 }
 
-struct ImportedPalette {
+struct ImportedPalette: Identifiable {
   let id = UUID()
   let colors: [PickedColor]
   let previewImage: NSImage?

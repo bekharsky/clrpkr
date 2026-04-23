@@ -169,7 +169,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   private var isMainWindowAlwaysOnTop = false
   private var hasRequestedScreenCaptureAccessThisLaunch = false
   private var aboutWindowController: NSWindowController?
-  private weak var historyController: ColorHistoryViewController?
   private lazy var screenColorPicker = ScreenColorPicker(
     hideWindow: { [weak self] in
       self?.hideMainWindow()
@@ -205,7 +204,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     refreshStatusBar()
     DispatchQueue.main.async { [weak self] in
       self?.showMainWindow()
-      self?.requestScreenCaptureAccessIfNeeded()
     }
   }
 
@@ -222,15 +220,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     return false
   }
 
-  func configureMainWindow(window: NSWindow, controller: ColorHistoryViewController) {
+  func configureMainWindow(window: MainWindow) {
     window.delegate = self
-    historyController = controller
-    controller.setAlwaysOnTop(isMainWindowAlwaysOnTop)
+    window.store.setAlwaysOnTop(isMainWindowAlwaysOnTop)
+    window.syncToolbarState()
+    window.updateTitlebarCount(window.store.history.count)
     applyMainWindowLevel()
-    controller.onRecentPicksChanged = { [weak self] picks in
-      self?.statusBarController.updateRecentPicks(picks)
+    window.store.onPickRequested = { [weak self] in
+      self?.startPickerFromToolbar(nil)
     }
-    statusBarController.updateRecentPicks(controller.currentRecentPickItems())
+    window.store.onImportRequested = { [weak self] in
+      self?.importImagesFromToolbar(nil)
+    }
+    window.store.onAlwaysOnTopToggleRequested = { [weak self] in
+      self?.toggleAlwaysOnTopFromToolbar(nil)
+    }
+    window.store.onRecentPicksChanged = { [weak self] picks in
+      self?.statusBarController.updateRecentPicks(picks)
+      self?.mainWindow?.updateTitlebarCount(self?.mainWindow?.store.history.count ?? 0)
+    }
+    statusBarController.updateRecentPicks(window.store.currentRecentPickItems())
   }
 
   private func configureApplicationMenu() {
@@ -292,13 +301,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   @objc
   func startPickerFromToolbar(_ sender: Any?) {
+    requestScreenCaptureAccessIfNeeded()
     screenColorPicker.start()
   }
 
   @objc
   func importImagesFromToolbar(_ sender: Any?) {
     guard
-      let controller = historyController ?? mainWindow?.historyViewController,
+      let store = mainWindow?.store,
       let window = mainWindow
     else {
       return
@@ -323,7 +333,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return
       }
 
-      controller.importSelectedItems(
+      store.importSelectedItems(
         at: panel.urls,
         includesNestedFolders: nestedFoldersButton.state == .on
       )
@@ -333,12 +343,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   @objc
   func toggleAlwaysOnTopFromToolbar(_ sender: Any?) {
     isMainWindowAlwaysOnTop.toggle()
-    historyController?.setAlwaysOnTop(isMainWindowAlwaysOnTop)
+    mainWindow?.store.setAlwaysOnTop(isMainWindowAlwaysOnTop)
+    mainWindow?.syncToolbarState()
     applyMainWindowLevel()
   }
 
   private func handlePickedColor(_ payload: PickedColorPayload) {
-    historyController?.addPick(
+    mainWindow?.store.addPick(
       red: payload.red,
       green: payload.green,
       blue: payload.blue,
