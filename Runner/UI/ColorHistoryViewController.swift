@@ -1,6 +1,6 @@
 import Cocoa
 
-final class ColorHistoryViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate {
+final class ColorHistoryViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
   var onRecentPicksChanged: (([RecentPickMenuItem]) -> Void)?
 
   private var history: [PickedColor] = []
@@ -22,6 +22,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   private let importedPaletteThumbnailView = AspectFillImageView()
   private let importedPaletteTitle = NSTextField(labelWithString: "Imported Palette")
   private let importedPaletteSubtitle = NSTextField(labelWithString: "Click a swatch to copy in the selected format")
+  private let importedPaletteExportButton = NSButton(title: "Copy palette as...", target: nil, action: nil)
   private let importedPaletteRemoveButton = NSButton(title: "", target: nil, action: nil)
   private let importedPalettePreviousButton = NSButton(title: "", target: nil, action: nil)
   private let importedPaletteNextButton = NSButton(title: "", target: nil, action: nil)
@@ -31,7 +32,11 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   private let tableView = NSTableView()
   private let emptyLabel = NSTextField(labelWithString: "Use Pick or drop an image to capture colors.")
   private let countLabel = NSTextField(labelWithString: "0 picks")
+  private let exportHistoryButton = NSButton(title: "Copy history as...", target: nil, action: nil)
   private let clearButton = NSButton(title: "Clear History", target: nil, action: nil)
+  private let rowContextMenu = NSMenu(title: "History Item")
+  private let exportHistoryMenu = NSMenu(title: "Copy History As")
+  private let exportPaletteMenu = NSMenu(title: "Copy Palette As")
   private let chromeBackgroundColor = NSColor(
     srgbRed: 0.945,
     green: 0.953,
@@ -39,6 +44,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     alpha: 1
   )
   private var isShowingDropOverlay = false
+  private var contextMenuRow = -1
 
   private var hasVisibleImportedPalettes: Bool {
     !importedPalettes.isEmpty && isImportedPaletteVisible
@@ -105,7 +111,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   func currentRecentPickItems() -> [RecentPickMenuItem] {
     Array(history.prefix(10)).map {
       RecentPickMenuItem(
-        text: formatColor($0, format: format),
+        text: recentPickMenuText(for: $0, format: format),
         color: $0.rgbColor
       )
     }
@@ -256,6 +262,10 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     tableView.dataSource = self
     tableView.target = self
     tableView.doubleAction = #selector(handleRowActivated(_:))
+    tableView.menu = rowContextMenu
+    rowContextMenu.delegate = self
+    configureExportMenu(exportHistoryMenu, action: #selector(handleCopyHistoryExport(_:)))
+    configureExportMenu(exportPaletteMenu, action: #selector(handleCopyPaletteExport(_:)))
 
     scrollView.drawsBackground = false
     scrollView.borderType = .noBorder
@@ -309,11 +319,20 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     importedPaletteThumbnailView.translatesAutoresizingMaskIntoConstraints = false
 
     importedPaletteTitle.font = NSFont.systemFont(ofSize: 12, weight: .semibold)
+    importedPaletteTitle.lineBreakMode = .byTruncatingTail
+    importedPaletteTitle.maximumNumberOfLines = 1
     importedPaletteSubtitle.font = NSFont.systemFont(ofSize: 11)
     importedPaletteSubtitle.textColor = NSColor.secondaryLabelColor
+    importedPaletteSubtitle.lineBreakMode = .byTruncatingTail
+    importedPaletteSubtitle.maximumNumberOfLines = 1
     importedPalettePageLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium)
     importedPalettePageLabel.textColor = NSColor.secondaryLabelColor
     importedPalettePageLabel.alignment = .center
+    importedPaletteExportButton.bezelStyle = .rounded
+    importedPaletteExportButton.controlSize = .small
+    importedPaletteExportButton.translatesAutoresizingMaskIntoConstraints = false
+    importedPaletteExportButton.target = self
+    importedPaletteExportButton.action = #selector(handleShowPaletteExportMenu(_:))
     importedPaletteRemoveButton.bezelStyle = .texturedRounded
     importedPaletteRemoveButton.controlSize = .small
     importedPaletteRemoveButton.target = self
@@ -371,20 +390,32 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     importedPaletteText.spacing = 2
     importedPaletteText.alignment = .leading
     importedPaletteText.translatesAutoresizingMaskIntoConstraints = false
+    importedPaletteText.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+    importedPaletteText.setHuggingPriority(.defaultLow, for: .horizontal)
+
+    importedPaletteThumbnailView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    importedPaletteThumbnailView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
     importedPaletteCard.addSubview(importedPaletteThumbnailView)
     importedPaletteCard.addSubview(importedPaletteText)
+    importedPaletteCard.addSubview(importedPaletteExportButton)
     importedPaletteCard.addSubview(importedPaletteRemoveButton)
     importedPaletteCard.addSubview(importedPaletteStrip)
+    let thumbnailAspectConstraint = importedPaletteThumbnailView.widthAnchor.constraint(equalTo: importedPaletteThumbnailView.heightAnchor)
+    thumbnailAspectConstraint.priority = .defaultHigh
+
     NSLayoutConstraint.activate([
       importedPaletteThumbnailView.leadingAnchor.constraint(equalTo: importedPaletteCard.leadingAnchor, constant: 12),
       importedPaletteThumbnailView.topAnchor.constraint(equalTo: importedPaletteCard.topAnchor, constant: 12),
       importedPaletteThumbnailView.bottomAnchor.constraint(equalTo: importedPaletteCard.bottomAnchor, constant: -12),
-      importedPaletteThumbnailView.widthAnchor.constraint(equalTo: importedPaletteThumbnailView.heightAnchor),
+      thumbnailAspectConstraint,
+      importedPaletteThumbnailView.widthAnchor.constraint(lessThanOrEqualToConstant: 88),
       importedPaletteText.leadingAnchor.constraint(equalTo: importedPaletteThumbnailView.trailingAnchor, constant: 10),
-      importedPaletteText.trailingAnchor.constraint(lessThanOrEqualTo: importedPaletteRemoveButton.leadingAnchor, constant: -8),
+      importedPaletteText.trailingAnchor.constraint(lessThanOrEqualTo: importedPaletteExportButton.leadingAnchor, constant: -8),
       importedPaletteText.topAnchor.constraint(equalTo: importedPaletteCard.topAnchor, constant: 12),
       importedPalettePageLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 42),
+      importedPaletteExportButton.centerYAnchor.constraint(equalTo: importedPaletteRemoveButton.centerYAnchor),
+      importedPaletteExportButton.trailingAnchor.constraint(equalTo: importedPaletteRemoveButton.leadingAnchor, constant: -6),
       importedPaletteRemoveButton.topAnchor.constraint(equalTo: importedPaletteCard.topAnchor, constant: 10),
       importedPaletteRemoveButton.trailingAnchor.constraint(equalTo: importedPaletteCard.trailingAnchor, constant: -10),
       importedPaletteStrip.leadingAnchor.constraint(equalTo: importedPaletteThumbnailView.trailingAnchor, constant: 10),
@@ -411,8 +442,12 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     clearButton.controlSize = .regular
     clearButton.target = self
     clearButton.action = #selector(handleClearHistory(_:))
+    exportHistoryButton.bezelStyle = .rounded
+    exportHistoryButton.controlSize = .regular
+    exportHistoryButton.target = self
+    exportHistoryButton.action = #selector(handleShowHistoryExportMenu(_:))
 
-    let footer = NSStackView(views: [countLabelContainer, NSView(), clearButton])
+    let footer = NSStackView(views: [countLabelContainer, NSView(), exportHistoryButton, clearButton])
     footer.orientation = .horizontal
     footer.alignment = .centerY
 
@@ -443,6 +478,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     emptyLabel.isHidden = isShowingDropOverlay || hasHistory
     scrollView.isHidden = !hasHistory
     clearButton.isEnabled = hasHistory
+    exportHistoryButton.isEnabled = hasHistory
     countLabel.stringValue = hasHistory ? "\(history.count) picks" : "0 picks"
     onRecentPicksChanged?(currentRecentPickItems())
   }
@@ -463,6 +499,38 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     history.removeAll()
     clearImportedPalettes()
     refreshInterface()
+  }
+
+  @objc
+  private func handleShowHistoryExportMenu(_ sender: NSView) {
+    popUpMenu(exportHistoryMenu, from: sender)
+  }
+
+  @objc
+  private func handleShowPaletteExportMenu(_ sender: NSView) {
+    popUpMenu(exportPaletteMenu, from: sender)
+  }
+
+  @objc
+  private func handleCopyHistoryExport(_ sender: NSMenuItem) {
+    guard
+      let format = PaletteExportFormat(rawValue: sender.tag),
+      !history.isEmpty
+    else {
+      return
+    }
+    copyText(exportColors(history, format: format))
+  }
+
+  @objc
+  private func handleCopyPaletteExport(_ sender: NSMenuItem) {
+    guard
+      let format = PaletteExportFormat(rawValue: sender.tag),
+      let palette = currentImportedPalette
+    else {
+      return
+    }
+    copyText(exportColors(palette.colors, format: format))
   }
 
   @objc
@@ -494,6 +562,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
       importedPaletteThumbnailView.image = nil
       importedPalettePageLabel.stringValue = "0 of 0"
       importedPaletteSubtitle.stringValue = "Drop an image to build a grouped palette"
+      importedPaletteExportButton.isEnabled = false
       updateImportedPaletteNavigation()
       clearImportedPaletteStrip()
       return
@@ -502,6 +571,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     importedPaletteThumbnailView.image = importedPalette.previewImage
     importedPaletteSubtitle.stringValue = "Click a swatch to copy as \(format.label)"
     importedPalettePageLabel.stringValue = "\(currentImportedPaletteIndex + 1) of \(importedPalettes.count)"
+    importedPaletteExportButton.isEnabled = !importedPalette.colors.isEmpty
     updateImportedPaletteNavigation()
 
     clearImportedPaletteStrip()
@@ -527,7 +597,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     }
 
     (sender as? PaletteSwatchButton)?.animateCopyBurst()
-    copy(item: item)
+    copy(item: item, as: format)
   }
 
   @objc
@@ -543,6 +613,27 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   @objc
   private func handleRowActivated(_ sender: Any?) {
     copySelectedRow()
+  }
+
+  @objc
+  private func handleContextMenuCopy(_ sender: NSMenuItem) {
+    guard
+      let format = ColorFormat(rawValue: sender.tag),
+      history.indices.contains(contextMenuRow)
+    else {
+      return
+    }
+    copy(item: history[contextMenuRow], as: format)
+  }
+
+  @objc
+  private func handleDeleteHistoryItem(_ sender: Any?) {
+    guard history.indices.contains(contextMenuRow) else {
+      return
+    }
+    history.remove(at: contextMenuRow)
+    contextMenuRow = -1
+    refreshInterface()
   }
 
   @objc
@@ -568,11 +659,14 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
     ) as? HistoryRowView {
       view.animateCopyBurst()
     }
-    copy(item: history[row])
+    copy(item: history[row], as: format)
   }
 
-  private func copy(item: PickedColor) {
-    let value = formatColor(item, format: format)
+  private func copy(item: PickedColor, as format: ColorFormat) {
+    copyText(formatColor(item, format: format))
+  }
+
+  private func copyText(_ value: String) {
     let pasteboard = NSPasteboard.general
     pasteboard.clearContents()
     pasteboard.setString(value, forType: .string)
@@ -606,10 +700,55 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
   }
 
   func tableViewSelectionDidChange(_ notification: Notification) {
+    if shouldSuppressSelectionCopy {
+      return
+    }
+
     if tableView.selectedRow >= 0 {
       copySelectedRow()
       tableView.deselectAll(nil)
     }
+  }
+
+  func menuNeedsUpdate(_ menu: NSMenu) {
+    guard menu == rowContextMenu else {
+      return
+    }
+
+    let row = resolvedContextMenuRow()
+    contextMenuRow = row
+    menu.removeAllItems()
+
+    guard history.indices.contains(row) else {
+      return
+    }
+
+    let item = history[row]
+    let titleItem = NSMenuItem(title: historySubtitle(for: item), action: nil, keyEquivalent: "")
+    titleItem.isEnabled = false
+    menu.addItem(titleItem)
+    menu.addItem(NSMenuItem.separator())
+
+    for format in ColorFormat.allCases {
+      let menuItem = NSMenuItem(
+        title: "Copy as \(format.label)",
+        action: #selector(handleContextMenuCopy(_:)),
+        keyEquivalent: ""
+      )
+      menuItem.target = self
+      menuItem.tag = format.rawValue
+      menu.addItem(menuItem)
+    }
+
+    menu.addItem(NSMenuItem.separator())
+
+    let deleteItem = NSMenuItem(
+      title: "Delete from History",
+      action: #selector(handleDeleteHistoryItem(_:)),
+      keyEquivalent: ""
+    )
+    deleteItem.target = self
+    menu.addItem(deleteItem)
   }
 
   private var currentImportedPalette: ImportedPalette? {
@@ -617,6 +756,54 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
       return nil
     }
     return importedPalettes[currentImportedPaletteIndex]
+  }
+
+  private var shouldSuppressSelectionCopy: Bool {
+    guard let event = NSApp.currentEvent else {
+      return false
+    }
+
+    if event.type == .rightMouseDown || event.type == .rightMouseUp ||
+      event.type == .otherMouseDown || event.type == .otherMouseUp {
+      return true
+    }
+
+    return event.type == .leftMouseDown && event.modifierFlags.contains(.control)
+  }
+
+  private func configureExportMenu(_ menu: NSMenu, action: Selector) {
+    menu.removeAllItems()
+    for format in PaletteExportFormat.allCases {
+      let item = NSMenuItem(title: format.label, action: action, keyEquivalent: "")
+      item.target = self
+      item.tag = format.rawValue
+      menu.addItem(item)
+    }
+  }
+
+  private func popUpMenu(_ menu: NSMenu, from view: NSView) {
+    let point = NSPoint(x: 0, y: view.bounds.maxY + 6)
+    menu.popUp(positioning: nil, at: point, in: view)
+  }
+
+  private func resolvedContextMenuRow() -> Int {
+    if tableView.clickedRow >= 0 {
+      return tableView.clickedRow
+    }
+
+    if let event = NSApp.currentEvent, let tableWindow = tableView.window {
+      let point = tableView.convert(event.locationInWindow, from: nil)
+      let row = tableView.row(at: point)
+      if row >= 0 {
+        return row
+      }
+
+      if tableWindow == event.window, tableView.selectedRow >= 0 {
+        return tableView.selectedRow
+      }
+    }
+
+    return tableView.selectedRow
   }
 
   private func clearImportedPaletteStrip() {

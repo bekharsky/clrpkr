@@ -110,7 +110,7 @@ final class HistoryRowView: NSTableCellView {
     previewView.layer?.backgroundColor = item.rgbColor.cgColor
     swatchView.color = item.rgbColor
     titleField.stringValue = formatColor(item, format: format)
-    subtitleField.stringValue = formatColor(item, format: .hex)
+    subtitleField.stringValue = historySubtitle(for: item)
     toolTip = "Click to copy \(titleField.stringValue)"
     syncHoverStateWithMouse(animated: false)
   }

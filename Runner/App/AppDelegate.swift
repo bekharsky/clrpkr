@@ -10,6 +10,7 @@ final class StatusBarController: NSObject {
   private var statusItem: NSStatusItem?
   private let statusMenu = NSMenu()
   private var recentPickItems: [RecentPickMenuItem] = []
+  private var isInstalled = false
 
   init(
     onPick: @escaping () -> Void,
@@ -27,6 +28,12 @@ final class StatusBarController: NSObject {
   }
 
   func install() {
+    if isInstalled {
+      rebuildMenu()
+      statusItem?.menu = statusMenu
+      return
+    }
+
     if statusItem == nil {
       statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     }
@@ -64,6 +71,7 @@ final class StatusBarController: NSObject {
       ? NSStatusItem.squareLength
       : max(button.fittingSize.width + 4, NSStatusItem.squareLength)
     statusItem?.menu = statusMenu
+    isInstalled = true
   }
 
   func updateRecentPicks(_ picks: [RecentPickMenuItem]) {
@@ -160,6 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   private var isMainWindowAlwaysOnTop = false
   private var hasRequestedScreenCaptureAccessThisLaunch = false
+  private var aboutWindowController: NSWindowController?
   private weak var historyController: ColorHistoryViewController?
   private lazy var screenColorPicker = ScreenColorPicker(
     hideWindow: { [weak self] in
@@ -200,10 +209,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
   }
 
-  func applicationDidBecomeActive(_ notification: Notification) {
-    refreshStatusBar()
-  }
-
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     false
   }
@@ -222,7 +227,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     historyController = controller
     controller.setAlwaysOnTop(isMainWindowAlwaysOnTop)
     applyMainWindowLevel()
-    refreshStatusBar()
     controller.onRecentPicksChanged = { [weak self] picks in
       self?.statusBarController.updateRecentPicks(picks)
     }
@@ -279,11 +283,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   @objc
   private func showAbout(_ sender: Any?) {
-    var options: [NSApplication.AboutPanelOptionKey: Any] = [:]
-    if let icon = resolvedApplicationIcon() {
-      options[.applicationIcon] = icon
-    }
-    NSApp.orderFrontStandardAboutPanel(options)
+    let windowController = aboutWindowController ?? makeAboutWindowController()
+    aboutWindowController = windowController
+    windowController.showWindow(nil)
+    windowController.window?.center()
     NSApp.activate(ignoringOtherApps: true)
   }
 
@@ -294,7 +297,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   @objc
   func importImagesFromToolbar(_ sender: Any?) {
-    guard let controller = historyController ?? mainWindow?.historyViewController else {
+    guard
+      let controller = historyController ?? mainWindow?.historyViewController,
+      let window = mainWindow
+    else {
       return
     }
 
@@ -310,23 +316,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     nestedFoldersButton.state = .off
     panel.accessoryView = nestedFoldersButton
 
-    let previousPolicy = NSApp.activationPolicy()
-    let switchedToRegular = previousPolicy != .regular && NSApp.setActivationPolicy(.regular)
-
     showMainWindow()
     NSApp.activate(ignoringOtherApps: true)
+    panel.beginSheetModal(for: window) { response in
+      guard response == .OK else {
+        return
+      }
 
-    if panel.runModal() == .OK {
       controller.importSelectedItems(
         at: panel.urls,
         includesNestedFolders: nestedFoldersButton.state == .on
       )
-    }
-
-    if switchedToRegular {
-      DispatchQueue.main.async {
-        NSApp.setActivationPolicy(previousPolicy)
-      }
     }
   }
 
@@ -368,6 +368,110 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     return NSImage(named: "AppIcon")
   }
 
+  private func makeAboutWindowController() -> NSWindowController {
+    let contentSize = NSSize(width: 420, height: 320)
+    let window = NSWindow(
+      contentRect: NSRect(origin: .zero, size: contentSize),
+      styleMask: [.titled, .closable],
+      backing: .buffered,
+      defer: false
+    )
+    window.title = "About ClrPkr"
+    window.isReleasedWhenClosed = false
+    window.center()
+
+    let contentView = NSView(frame: NSRect(origin: .zero, size: contentSize))
+    contentView.translatesAutoresizingMaskIntoConstraints = false
+    window.contentView = contentView
+
+    let iconView = NSImageView()
+    iconView.translatesAutoresizingMaskIntoConstraints = false
+    iconView.image = resolvedApplicationIcon()
+    iconView.imageScaling = .scaleProportionallyUpOrDown
+
+    let appNameLabel = NSTextField(labelWithString: "ClrPkr")
+    appNameLabel.font = NSFont.systemFont(ofSize: 20, weight: .semibold)
+    appNameLabel.alignment = .center
+
+    let versionLabel = NSTextField(labelWithString: aboutVersionText())
+    versionLabel.font = NSFont.systemFont(ofSize: 12)
+    versionLabel.textColor = .secondaryLabelColor
+    versionLabel.alignment = .center
+
+    let authorLabel = NSTextField(labelWithString: "Author: Sergey Bekharskiy")
+    authorLabel.font = NSFont.systemFont(ofSize: 12)
+    authorLabel.textColor = .secondaryLabelColor
+    authorLabel.alignment = .center
+
+    let copyrightLabel = NSTextField(labelWithString: aboutCopyrightText())
+    copyrightLabel.font = NSFont.systemFont(ofSize: 11)
+    copyrightLabel.textColor = .secondaryLabelColor
+    copyrightLabel.alignment = .center
+
+    let attributionTitle = NSTextField(labelWithString: "Color naming")
+    attributionTitle.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+
+    let attributionLabel = NSTextField(wrappingLabelWithString: NamedColorLookup.aboutAttribution)
+    attributionLabel.font = NSFont.systemFont(ofSize: 12)
+    attributionLabel.textColor = .labelColor
+    attributionLabel.maximumNumberOfLines = 0
+
+    let stack = NSStackView(views: [
+      iconView,
+      appNameLabel,
+      versionLabel,
+      authorLabel,
+      copyrightLabel,
+      attributionTitle,
+      attributionLabel
+    ])
+    stack.orientation = .vertical
+    stack.alignment = .centerX
+    stack.spacing = 10
+    stack.edgeInsets = NSEdgeInsets(top: 20, left: 24, bottom: 20, right: 24)
+    stack.translatesAutoresizingMaskIntoConstraints = false
+    contentView.addSubview(stack)
+
+    attributionLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    attributionLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    attributionTitle.setContentHuggingPriority(.defaultLow, for: .horizontal)
+
+    NSLayoutConstraint.activate([
+      stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+      stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+      stack.topAnchor.constraint(equalTo: contentView.topAnchor),
+      stack.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor),
+      iconView.widthAnchor.constraint(equalToConstant: 64),
+      iconView.heightAnchor.constraint(equalToConstant: 64),
+      attributionLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 340)
+    ])
+
+    return NSWindowController(window: window)
+  }
+
+  private func aboutVersionText() -> String {
+    let bundle = Bundle.main
+    let shortVersion = (bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let buildVersion = (bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    switch (shortVersion?.isEmpty == false ? shortVersion : nil, buildVersion?.isEmpty == false ? buildVersion : nil) {
+    case let (short?, build?) where short != build:
+      return "Version \(short) (\(build))"
+    case let (short?, _):
+      return "Version \(short)"
+    case let (_, build?):
+      return "Build \(build)"
+    default:
+      return "Color picker and palette utility"
+    }
+  }
+
+  private func aboutCopyrightText() -> String {
+    (Bundle.main.object(forInfoDictionaryKey: "NSHumanReadableCopyright") as? String)?
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .nonEmpty ?? "Copyright © 2026 Kharion. All rights reserved."
+  }
+
   private func showMainWindow() {
     guard let window = mainWindow else {
       return
@@ -391,9 +495,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   }
 
   private func refreshStatusBar() {
-    DispatchQueue.main.async { [weak self] in
-      self?.statusBarController.install()
-    }
+    statusBarController.install()
   }
 
   private func requestScreenCaptureAccessIfNeeded() {
@@ -413,5 +515,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     NSApp.activate(ignoringOtherApps: true)
     _ = CGRequestScreenCaptureAccess()
+  }
+}
+
+private extension String {
+  var nonEmpty: String? {
+    isEmpty ? nil : self
   }
 }
