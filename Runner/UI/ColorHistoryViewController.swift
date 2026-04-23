@@ -196,7 +196,7 @@ final class ColorHistoryViewController: NSViewController, NSTableViewDataSource,
       importButton.title = "Import"
     }
 
-    let headerSpacer = HeaderDragHandleView()
+    let headerSpacer = NSView()
     headerSpacer.translatesAutoresizingMaskIntoConstraints = false
     headerSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
     headerSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)

@@ -191,6 +191,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   )
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    configureApplicationIcon()
     configureApplicationMenu()
     refreshStatusBar()
     DispatchQueue.main.async { [weak self] in
@@ -278,7 +279,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   @objc
   private func showAbout(_ sender: Any?) {
-    NSApp.orderFrontStandardAboutPanel(nil)
+    var options: [NSApplication.AboutPanelOptionKey: Any] = [:]
+    if let icon = resolvedApplicationIcon() {
+      options[.applicationIcon] = icon
+    }
+    NSApp.orderFrontStandardAboutPanel(options)
     NSApp.activate(ignoringOtherApps: true)
   }
 
@@ -347,13 +352,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     pasteboard.setString(text, forType: .string)
   }
 
+  private func configureApplicationIcon() {
+    guard let icon = resolvedApplicationIcon() else {
+      return
+    }
+    NSApp.applicationIconImage = icon
+  }
+
+  private func resolvedApplicationIcon() -> NSImage? {
+    if let resourcePath = Bundle.main.path(forResource: "AppIcon", ofType: "icns"),
+       let icon = NSImage(contentsOfFile: resourcePath) {
+      return icon
+    }
+
+    return NSImage(named: "AppIcon")
+  }
+
   private func showMainWindow() {
     guard let window = mainWindow else {
       return
     }
 
     applyMainWindowLevel()
-    NSApp.activate(ignoringOtherApps: true)
+    NSRunningApplication.current.activate(options: [.activateIgnoringOtherApps])
     window.makeKeyAndOrderFront(nil)
   }
 

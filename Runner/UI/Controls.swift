@@ -26,12 +26,6 @@ enum CopyBurstAnimator {
 
 final class HeaderBarView: NSView {
   override var mouseDownCanMoveWindow: Bool {
-    false
-  }
-}
-
-final class HeaderDragHandleView: NSView {
-  override var mouseDownCanMoveWindow: Bool {
     true
   }
 }
@@ -81,6 +75,10 @@ final class PalettePagerCardView: NSView {
 }
 
 final class TrafficLightButton: NSButton {
+  override var mouseDownCanMoveWindow: Bool {
+    false
+  }
+
   private var trackingAreaRef: NSTrackingArea?
   private var isHovering = false
 
@@ -187,6 +185,10 @@ final class TrafficLightButton: NSButton {
 }
 
 final class HeaderPickButton: NSButton {
+  override var mouseDownCanMoveWindow: Bool {
+    false
+  }
+
   private var trackingAreaRef: NSTrackingArea?
   private var isHovering = false
   var isToggled = false {
