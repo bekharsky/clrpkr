@@ -414,20 +414,11 @@ struct MainWindowRootView: View {
 
   private func importedPaletteSection(_ palette: ImportedPalette) -> some View {
     cardContainer {
-      VStack(alignment: .leading, spacing: 10) {
-        HStack(alignment: .center, spacing: 12) {
-          previewImage(palette.previewImage)
+      HStack(alignment: .top, spacing: 12) {
+        previewImage(palette.previewImage, width: 96, height: 96)
 
-          VStack(alignment: .leading, spacing: 2) {
-            Text("Imported Palette")
-              .font(.system(size: 12, weight: .semibold))
-              .lineLimit(1)
-
-            Text("Click a swatch to copy as \(store.format.label)")
-              .font(.system(size: 11))
-              .foregroundColor(.secondary)
-              .lineLimit(1)
-
+        VStack(alignment: .leading, spacing: 10) {
+          HStack(alignment: .top, spacing: 8) {
             if store.importedPalettes.count > 1 {
               HStack(spacing: 4) {
                 PagerButton(
@@ -456,54 +447,55 @@ struct MainWindowRootView: View {
                 .disabled(store.currentImportedPaletteIndex >= store.importedPalettes.count - 1)
               }
             }
-          }
-          .layoutPriority(1)
 
-          Spacer(minLength: 8)
+            Spacer(minLength: 0)
 
-          MenuButton(
-            title: "Copy palette as...",
-            controlSize: .small,
-            items: PaletteExportFormat.allCases.map { format in
-              MenuButtonItem(title: format.label) {
-                copyText(exportColors(palette.colors, format: format))
-              }
-            }
-          )
-          .frame(width: 132)
-
-          SmallIconButton(
-            symbolName: "xmark",
-            fallbackText: "x",
-            toolTip: "Remove imported palette",
-            action: { store.removeCurrentImportedPalette() }
-          )
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-
-        ScrollView(.horizontal, showsIndicators: true) {
-          HStack(spacing: 8) {
-            ForEach(palette.colors) { item in
-              PaletteSwatchChip(
-                color: item.rgbColor,
-                toolTip: "Copy \(formatColor(item, format: store.format))",
-                action: {
-                  copyText(formatColor(item, format: store.format))
+            MenuButton(
+              title: "Copy palette as...",
+              controlSize: .small,
+              items: PaletteExportFormat.allCases.map { format in
+                MenuButtonItem(title: format.label) {
+                  copyText(exportColors(palette.colors, format: format))
                 }
-              )
-              .contextMenu {
-                ForEach(ColorFormat.allCases, id: \.rawValue) { format in
-                  Button("Copy as \(format.label)") {
-                    copyText(formatColor(item, format: format))
+              }
+            )
+            .fixedSize()
+
+            SmallIconButton(
+              symbolName: "xmark",
+              fallbackText: "x",
+              toolTip: "Remove imported palette",
+              action: { store.removeCurrentImportedPalette() }
+            )
+          }
+
+          ScrollView(.horizontal, showsIndicators: true) {
+            HStack(spacing: 8) {
+              ForEach(palette.colors) { item in
+                PaletteSwatchChip(
+                  color: item.rgbColor,
+                  toolTip: "Copy \(formatColor(item, format: store.format))",
+                  action: {
+                    copyText(formatColor(item, format: store.format))
+                  }
+                )
+                .contextMenu {
+                  ForEach(ColorFormat.allCases, id: \.rawValue) { format in
+                    Button("Copy as \(format.label)") {
+                      copyText(formatColor(item, format: format))
+                    }
                   }
                 }
               }
             }
+            .padding(.vertical, 8)
           }
-          .padding(.vertical, 2)
+          .frame(maxWidth: .infinity)
+          .frame(height: 56)
         }
-        .frame(height: 40)
+        .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
       }
+      .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
     }
     .frame(maxWidth: .infinity)
     .fixedSize(horizontal: false, vertical: true)
@@ -545,6 +537,10 @@ struct MainWindowRootView: View {
 
   private var footer: some View {
     HStack(spacing: 10) {
+      Text(store.history.count == 1 ? "1 pick" : "\(store.history.count) picks")
+        .font(.system(size: 11))
+        .foregroundColor(.secondary)
+
       Spacer()
 
       MenuButton(
@@ -559,11 +555,14 @@ struct MainWindowRootView: View {
       )
       .fixedSize()
 
-      Button("Clear History") {
+      NativeButton(
+        title: "Clear History",
+        controlSize: .small,
+        isEnabled: !store.history.isEmpty
+      ) {
         store.clearAll()
       }
-      .controlSize(.small)
-      .disabled(store.history.isEmpty)
+      .fixedSize()
     }
   }
 
@@ -605,12 +604,12 @@ struct MainWindowRootView: View {
   }
 
   @ViewBuilder
-  private func previewImage(_ image: NSImage?) -> some View {
+  private func previewImage(_ image: NSImage?, width: CGFloat = 72, height: CGFloat = 72) -> some View {
     if let image {
       Image(nsImage: image)
         .resizable()
         .aspectRatio(contentMode: .fill)
-        .frame(width: 72, height: 72)
+        .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
           RoundedRectangle(cornerRadius: 8)
@@ -619,7 +618,7 @@ struct MainWindowRootView: View {
     } else {
       RoundedRectangle(cornerRadius: 8)
         .fill(PlatformColor.previewPlaceholder)
-        .frame(width: 72, height: 72)
+        .frame(width: width, height: height)
     }
   }
 
@@ -676,6 +675,8 @@ private struct HistoryRowButton: View {
 
   @State private var isHovering = false
   @State private var showBurst = false
+  @State private var burstLifted = false
+  @State private var burstID = 0
 
   var body: some View {
     Button {
@@ -688,8 +689,9 @@ private struct HistoryRowButton: View {
         if showBurst {
           SymbolView(symbolName: "doc.on.doc", fallbackText: "Copy")
             .foregroundColor(.secondary)
-            .offset(x: -6, y: -18)
-            .transition(.asymmetric(insertion: .identity, removal: .opacity))
+            .opacity(burstLifted ? 0 : 1)
+            .offset(x: -6, y: burstLifted ? -22 : -6)
+            .zIndex(1)
         }
       }
     }
@@ -740,7 +742,6 @@ private struct HistoryRowButton: View {
       RoundedRectangle(cornerRadius: 12)
         .stroke(Color.black.opacity(0.05), lineWidth: 1)
     )
-    .shadow(color: Color.black.opacity(isHovering ? 0.18 : 0), radius: 6, x: 0, y: 2)
   }
 
   @ViewBuilder
@@ -767,11 +768,22 @@ private struct HistoryRowButton: View {
   }
 
   private func triggerBurst() {
+    burstID += 1
+    let currentBurstID = burstID
     showBurst = true
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-      withAnimation(.easeOut(duration: 0.35)) {
-        showBurst = false
+    burstLifted = false
+
+    DispatchQueue.main.async {
+      guard burstID == currentBurstID else { return }
+      withAnimation(.easeOut(duration: 0.32)) {
+        burstLifted = true
       }
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+      guard burstID == currentBurstID else { return }
+      burstLifted = false
+      showBurst = false
     }
   }
 }
@@ -782,6 +794,8 @@ private struct PaletteSwatchChip: View {
   let action: () -> Void
 
   @State private var showBurst = false
+  @State private var burstLifted = false
+  @State private var burstID = 0
 
   var body: some View {
     Button {
@@ -793,8 +807,9 @@ private struct PaletteSwatchChip: View {
 
         if showBurst {
           swatch
-            .offset(y: -14)
-            .transition(.asymmetric(insertion: .identity, removal: .opacity))
+            .opacity(burstLifted ? 0 : 1)
+            .offset(y: burstLifted ? -18 : 0)
+            .zIndex(1)
         }
       }
     }
@@ -812,11 +827,22 @@ private struct PaletteSwatchChip: View {
   }
 
   private func triggerBurst() {
+    burstID += 1
+    let currentBurstID = burstID
     showBurst = true
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-      withAnimation(.easeOut(duration: 0.50)) {
-        showBurst = false
+    burstLifted = false
+
+    DispatchQueue.main.async {
+      guard burstID == currentBurstID else { return }
+      withAnimation(.easeOut(duration: 0.32)) {
+        burstLifted = true
       }
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+      guard burstID == currentBurstID else { return }
+      burstLifted = false
+      showBurst = false
     }
   }
 }
@@ -872,6 +898,47 @@ private struct MenuButtonItem {
   let action: () -> Void
 }
 
+private struct NativeButton: NSViewRepresentable {
+  let title: String
+  let controlSize: NSControl.ControlSize
+  var isEnabled: Bool = true
+  let action: () -> Void
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(action: action)
+  }
+
+  func makeNSView(context: Context) -> NSButton {
+    let button = NSButton(title: title, target: context.coordinator, action: #selector(Coordinator.handlePress(_:)))
+    button.bezelStyle = .rounded
+    button.controlSize = controlSize
+    button.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: controlSize))
+    button.isEnabled = isEnabled
+    return button
+  }
+
+  func updateNSView(_ nsView: NSButton, context: Context) {
+    nsView.title = title
+    nsView.controlSize = controlSize
+    nsView.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: controlSize))
+    nsView.isEnabled = isEnabled
+    context.coordinator.action = action
+  }
+
+  final class Coordinator: NSObject {
+    var action: () -> Void
+
+    init(action: @escaping () -> Void) {
+      self.action = action
+    }
+
+    @objc
+    func handlePress(_ sender: NSButton) {
+      action()
+    }
+  }
+}
+
 private struct MenuButton: NSViewRepresentable {
   let title: String
   let controlSize: NSControl.ControlSize
@@ -886,12 +953,15 @@ private struct MenuButton: NSViewRepresentable {
     let button = NSButton(title: title, target: context.coordinator, action: #selector(Coordinator.showMenu(_:)))
     button.bezelStyle = .rounded
     button.controlSize = controlSize
+    button.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: controlSize))
+    button.isEnabled = isEnabled
     return button
   }
 
   func updateNSView(_ nsView: NSButton, context: Context) {
     nsView.title = title
     nsView.controlSize = controlSize
+    nsView.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: controlSize))
     nsView.isEnabled = isEnabled
     context.coordinator.items = items
   }
