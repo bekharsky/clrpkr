@@ -15,7 +15,11 @@
 		33A1F0C62C00000400000001 /* ColorNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0BA2C00000400000001 /* ColorNaming.swift */; };
 		33A1F0D02C00000500000001 /* ClrPkrStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0CD2C00000500000001 /* ClrPkrStore.swift */; };
 		33A1F0D12C00000500000001 /* MainWindowRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0CE2C00000500000001 /* MainWindowRootView.swift */; };
-		33A1F0D22C00000500000001 /* MainWindowComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0CF2C00000500000001 /* MainWindowComponents.swift */; };
+		33A1F0E02C00000700000001 /* ImportedPaletteSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0DB2C00000700000001 /* ImportedPaletteSection.swift */; };
+		33A1F0E12C00000700000001 /* HistorySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0DC2C00000700000001 /* HistorySection.swift */; };
+		33A1F0E22C00000700000001 /* InteractiveControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0DD2C00000700000001 /* InteractiveControls.swift */; };
+		33A1F0E32C00000700000001 /* SharedControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0DE2C00000700000001 /* SharedControls.swift */; };
+		33A1F0E42C00000700000001 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0DF2C00000700000001 /* StatusBarController.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
 		33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F22044A3C60003C045 /* Assets.xcassets */; };
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
@@ -56,7 +60,11 @@
 		33A1F0BA2C00000400000001 /* ColorNaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorNaming.swift; sourceTree = "<group>"; };
 		33A1F0CD2C00000500000001 /* ClrPkrStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClrPkrStore.swift; sourceTree = "<group>"; };
 		33A1F0CE2C00000500000001 /* MainWindowRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowRootView.swift; sourceTree = "<group>"; };
-		33A1F0CF2C00000500000001 /* MainWindowComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowComponents.swift; sourceTree = "<group>"; };
+		33A1F0DB2C00000700000001 /* ImportedPaletteSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportedPaletteSection.swift; sourceTree = "<group>"; };
+		33A1F0DC2C00000700000001 /* HistorySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistorySection.swift; sourceTree = "<group>"; };
+		33A1F0DD2C00000700000001 /* InteractiveControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveControls.swift; sourceTree = "<group>"; };
+		33A1F0DE2C00000700000001 /* SharedControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedControls.swift; sourceTree = "<group>"; };
+		33A1F0DF2C00000700000001 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		33CC10ED2044A3C60003C045 /* clrpkr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = clrpkr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		33CC10F02044A3C60003C045 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		33CC10F22044A3C60003C045 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Runner/Assets.xcassets; sourceTree = "<group>"; };
@@ -101,6 +109,7 @@
 			isa = PBXGroup;
 			children = (
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
+				33A1F0DF2C00000700000001 /* StatusBarController.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -119,10 +128,13 @@
 				33A1F0CD2C00000500000001 /* ClrPkrStore.swift */,
 				33A1F0BA2C00000400000001 /* ColorNaming.swift */,
 				33A1F0B42C00000300000001 /* ColorModels.swift */,
+				33A1F0DC2C00000700000001 /* HistorySection.swift */,
 				33A1F0B52C00000300000001 /* ImagePaletteExtractor.swift */,
-				33A1F0CF2C00000500000001 /* MainWindowComponents.swift */,
+				33A1F0DB2C00000700000001 /* ImportedPaletteSection.swift */,
+				33A1F0DD2C00000700000001 /* InteractiveControls.swift */,
 				33CC11122044BFA00003C045 /* MainWindow.swift */,
 				33A1F0CE2C00000500000001 /* MainWindowRootView.swift */,
+				33A1F0DE2C00000700000001 /* SharedControls.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -302,12 +314,16 @@
 				33A1F0D02C00000500000001 /* ClrPkrStore.swift in Sources */,
 				33A1F0C62C00000400000001 /* ColorNaming.swift in Sources */,
 				33A1F0C02C00000300000001 /* ColorModels.swift in Sources */,
+				33A1F0E12C00000700000001 /* HistorySection.swift in Sources */,
 				33A1F0C12C00000300000001 /* ImagePaletteExtractor.swift in Sources */,
-				33A1F0D22C00000500000001 /* MainWindowComponents.swift in Sources */,
+				33A1F0E02C00000700000001 /* ImportedPaletteSection.swift in Sources */,
+				33A1F0E22C00000700000001 /* InteractiveControls.swift in Sources */,
 				33CC11132044BFA00003C045 /* MainWindow.swift in Sources */,
 				33A1F0D12C00000500000001 /* MainWindowRootView.swift in Sources */,
 				33A1F0A12C00000100000001 /* ScreenColorPicker.swift in Sources */,
+				33A1F0E32C00000700000001 /* SharedControls.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
+				33A1F0E42C00000700000001 /* StatusBarController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
