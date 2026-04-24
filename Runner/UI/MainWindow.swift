@@ -52,6 +52,10 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
       toolbarStyle = .unified
       titlebarSeparatorStyle = .none
     }
+
+    DispatchQueue.main.async { [weak self] in
+      self?.suppressControlFocusRings()
+    }
   }
 
   func syncToolbarState() {
@@ -111,6 +115,26 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
     }
     self.toolbar = toolbar
     syncToolbarState()
+  }
+
+  private func suppressControlFocusRings() {
+    if let rootView = standardWindowButton(.closeButton)?.superview?.superview {
+      suppressFocusRings(in: rootView)
+    }
+
+    if let contentView {
+      suppressFocusRings(in: contentView)
+    }
+  }
+
+  private func suppressFocusRings(in rootView: NSView) {
+    if let button = rootView as? NSButton {
+      button.focusRingType = .none
+    }
+
+    for subview in rootView.subviews {
+      suppressFocusRings(in: subview)
+    }
   }
 
   private func makeToolbarItem(

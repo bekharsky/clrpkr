@@ -59,7 +59,7 @@ final class ClrPkrStore: ObservableObject {
     publishRecentPickItems()
   }
 
-  func addPalette(colors: [NSColor], previewImage: NSImage?) {
+  func addPalette(colors: [NSColor], previewImage: NSImage?, sourceName: String? = nil) {
     let items = colors.map {
       PickedColor(
         color: $0,
@@ -72,6 +72,7 @@ final class ClrPkrStore: ObservableObject {
       ImportedPalette(
         colors: items,
         previewImage: previewImage,
+        sourceName: sourceName,
         importedAt: Date()
       ),
       at: 0
@@ -110,6 +111,11 @@ final class ClrPkrStore: ObservableObject {
     isImportedPaletteVisible = true
   }
 
+  func removeHistoryItem(id: PickedColor.ID) {
+    history.removeAll { $0.id == id }
+    publishRecentPickItems()
+  }
+
   func clearAll() {
     history.removeAll()
     clearImportedPalettes()
@@ -131,22 +137,31 @@ final class ClrPkrStore: ObservableObject {
     isImportedPaletteVisible = false
   }
 
-  private func importImages(_ images: [NSImage]) {
+  private func importImages(_ images: [(url: URL, image: NSImage)]) {
     guard !images.isEmpty else {
       return
     }
 
-    for image in images.reversed() {
-      let colors = ImagePaletteExtractor.extractPalette(from: image).map(\.color)
+    for entry in images.reversed() {
+      let colors = ImagePaletteExtractor.extractPalette(from: entry.image).map(\.color)
       guard !colors.isEmpty else {
         continue
       }
-      addPalette(colors: colors, previewImage: image)
+      addPalette(
+        colors: colors,
+        previewImage: entry.image,
+        sourceName: entry.url.lastPathComponent
+      )
     }
   }
 
-  private func loadImportableImages(from urls: [URL], includesNestedFolders: Bool) -> [NSImage] {
-    expandedImportURLs(from: urls, includesNestedFolders: includesNestedFolders).compactMap(NSImage.init(contentsOf:))
+  private func loadImportableImages(from urls: [URL], includesNestedFolders: Bool) -> [(url: URL, image: NSImage)] {
+    expandedImportURLs(from: urls, includesNestedFolders: includesNestedFolders).compactMap { url in
+      guard let image = NSImage(contentsOf: url) else {
+        return nil
+      }
+      return (url: url, image: image)
+    }
   }
 
   private func expandedImportURLs(from urls: [URL], includesNestedFolders: Bool) -> [URL] {
