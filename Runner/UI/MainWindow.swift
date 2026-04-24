@@ -1,6 +1,15 @@
 import AppKit
 import SwiftUI
 
+private final class ToolbarHitAreaView: NSView {
+  weak var targetButton: NSButton?
+
+  override func hitTest(_ point: NSPoint) -> NSView? {
+    guard bounds.contains(point) else { return nil }
+    return targetButton
+  }
+}
+
 final class MainWindow: NSWindow, NSToolbarDelegate {
   private enum ToolbarIdentifier {
     static let main = NSToolbar.Identifier("com.kharion.clrpkr.main-toolbar")
@@ -89,15 +98,25 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
   }
 
   private func toolbarImage(systemName: String, tintColor: NSColor? = nil) -> NSImage? {
-    guard let image = PlatformSymbol.image(systemName: systemName) else {
-      return nil
+    let configuredImage: NSImage
+    if #available(macOS 11.0, *) {
+      guard let image = NSImage(systemSymbolName: systemName, accessibilityDescription: nil) else {
+        return nil
+      }
+      let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+      configuredImage = image.withSymbolConfiguration(config) ?? image
+    } else {
+      guard let image = PlatformSymbol.image(systemName: systemName) else {
+        return nil
+      }
+      configuredImage = image
     }
 
     guard let tintColor else {
-      return image
+      return configuredImage
     }
 
-    let tintedImage = image.copy() as? NSImage ?? image
+    let tintedImage = configuredImage.copy() as? NSImage ?? configuredImage
     tintedImage.lockFocus()
     defer { tintedImage.unlockFocus() }
 
@@ -122,12 +141,12 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
     guard titleAccessoryController == nil else { return }
 
     let titleLabel = NSTextField(labelWithString: "ClrPkr")
-    titleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+    titleLabel.font = .systemFont(ofSize: 14, weight: .semibold)
     titleLabel.textColor = .labelColor
     titleLabel.lineBreakMode = .byTruncatingTail
 
     let countLabel = NSTextField(labelWithString: "")
-    countLabel.font = .systemFont(ofSize: 10, weight: .regular)
+    countLabel.font = .systemFont(ofSize: 12, weight: .regular)
     countLabel.textColor = .secondaryLabelColor
     countLabel.lineBreakMode = .byTruncatingTail
     self.countLabel = countLabel
@@ -138,15 +157,15 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
     stack.spacing = 0
     stack.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
 
-    let container = NSView(frame: NSRect(x: 0, y: 0, width: 74, height: 28))
+    let container = NSView(frame: NSRect(x: 0, y: 0, width: 88, height: 30))
     container.translatesAutoresizingMaskIntoConstraints = false
     stack.translatesAutoresizingMaskIntoConstraints = false
     container.addSubview(stack)
 
     NSLayoutConstraint.activate([
-      container.widthAnchor.constraint(equalToConstant: 74),
-      container.heightAnchor.constraint(equalToConstant: 28),
-      stack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+      container.widthAnchor.constraint(equalToConstant: 88),
+      container.heightAnchor.constraint(equalToConstant: 30),
+      stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 8),
       stack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
       stack.centerYAnchor.constraint(equalTo: container.centerYAnchor)
     ])
@@ -196,11 +215,13 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
 
     let button = NSButton(image: toolbarImage(systemName: symbolName, tintColor: tintColor) ?? NSImage(), target: self, action: action)
     button.bezelStyle = .texturedRounded
+    button.controlSize = .regular
     button.isBordered = true
     button.imagePosition = .imageOnly
     button.focusRingType = .none
     button.translatesAutoresizingMaskIntoConstraints = false
     button.setButtonType(.momentaryPushIn)
+    button.imageScaling = .scaleNone
 
     let titleLabel = NSTextField(labelWithString: label)
     titleLabel.font = .systemFont(ofSize: 10, weight: .regular)
@@ -214,17 +235,19 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
     stack.spacing = 1
     stack.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
 
-    let container = NSView(frame: NSRect(x: 0, y: 0, width: 48, height: 36))
+    let container = ToolbarHitAreaView(frame: NSRect(x: 0, y: 0, width: 50, height: 40))
     container.translatesAutoresizingMaskIntoConstraints = false
+    container.targetButton = button
     stack.translatesAutoresizingMaskIntoConstraints = false
     container.addSubview(stack)
 
     NSLayoutConstraint.activate([
-      container.widthAnchor.constraint(equalToConstant: 48),
-      container.heightAnchor.constraint(equalToConstant: 36),
+      container.widthAnchor.constraint(equalToConstant: 50),
+      container.heightAnchor.constraint(equalToConstant: 40),
       stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
       stack.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-      button.widthAnchor.constraint(greaterThanOrEqualToConstant: 24)
+      button.widthAnchor.constraint(equalToConstant: 44),
+      button.heightAnchor.constraint(equalToConstant: 32)
     ])
 
     item.view = container
