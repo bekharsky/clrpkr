@@ -5,3 +5,22 @@
 .swiftpm/
 /build/
 .idea/
+
+# Xcode user-specific state
+*.xcuserstate
+*.xccheckout
+*.moved-aside
+xcuserdata/
+
+# Local build products
+DerivedData/
+
+# Local secrets and environment overrides
+.env
+.env.*
+*.p12
+*.mobileprovision
+*.pem
+*.key
+Secrets.*
+Config.local.*
