@@ -12,12 +12,16 @@ ClrPkr is a native macOS color picker with:
 
 The app is a small AppKit + SwiftUI hybrid:
 
-- [Runner/App/AppDelegate.swift](/Users/bekharsky/GIT/clrpkr/Runner/App/AppDelegate.swift) coordinates the app lifecycle, status bar, import flow, picker flow, and About window
-- [Runner/UI/MainWindow.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/MainWindow.swift) owns the `NSWindow` and native toolbar
+- [Runner/App/AppDelegate.swift](/Users/bekharsky/GIT/clrpkr/Runner/App/AppDelegate.swift) coordinates the app lifecycle, import flow, picker flow, About window, and main-window wiring
+- [Runner/App/StatusBarController.swift](/Users/bekharsky/GIT/clrpkr/Runner/App/StatusBarController.swift) owns the menu bar item and recent-picks menu
+- [Runner/UI/MainWindow.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/MainWindow.swift) owns the `NSWindow`, titlebar, and native toolbar
 - [Runner/UI/ClrPkrStore.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/ClrPkrStore.swift) owns window state, imported palettes, history, and recent-picks publishing
-- [Runner/UI/MainWindowRootView.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/MainWindowRootView.swift) contains the main SwiftUI layout and sections
-- [Runner/UI/MainWindowComponents.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/MainWindowComponents.swift) contains reusable controls and small view components
-- [Runner/UI/ColorModels.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/ColorModels.swift) contains formatting, export, and subtitle helpers
+- [Runner/UI/MainWindowRootView.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/MainWindowRootView.swift) composes the main SwiftUI sections and handles drop/copy coordination
+- [Runner/UI/ImportedPaletteSection.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/ImportedPaletteSection.swift) contains imported-palette layout, preview image, and swatch burst animation
+- [Runner/UI/HistorySection.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/HistorySection.swift) contains the history list, footer actions, and drop overlay
+- [Runner/UI/InteractiveControls.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/InteractiveControls.swift) contains interactive reusable controls such as history rows, palette swatches, and the format pill
+- [Runner/UI/SharedControls.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/SharedControls.swift) contains shared AppKit/SwiftUI button wrappers and small helpers
+- [Runner/UI/ColorModels.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/ColorModels.swift) contains formatting, export, and palette/history model helpers
 - [Runner/UI/ImagePaletteExtractor.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/ImagePaletteExtractor.swift) extracts dominant colors from imported images
 - [Runner/UI/ColorNaming.swift](/Users/bekharsky/GIT/clrpkr/Runner/UI/ColorNaming.swift) maps picks to nearest color names
 - [Runner/Picker/ScreenColorPicker.swift](/Users/bekharsky/GIT/clrpkr/Runner/Picker/ScreenColorPicker.swift) contains the screen picker and lens placement logic
@@ -50,6 +54,11 @@ Current tests cover:
 - lens placement logic
 - image palette extraction
 - `ClrPkrStore` behavior for history, imported palettes, and recent picks
+
+Test files:
+
+- [RunnerTests/RunnerTests.swift](/Users/bekharsky/GIT/clrpkr/RunnerTests/RunnerTests.swift)
+- [RunnerTests/ClrPkrStoreTests.swift](/Users/bekharsky/GIT/clrpkr/RunnerTests/ClrPkrStoreTests.swift)
 
 ## Notes
 
