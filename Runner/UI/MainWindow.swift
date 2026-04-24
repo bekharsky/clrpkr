@@ -380,21 +380,18 @@ struct MainWindowRootView: View {
   @State private var isDropTargeted = false
 
   var body: some View {
-    GeometryReader { proxy in
-      VStack(alignment: .leading, spacing: 7) {
-        formatPicker
+    VStack(alignment: .leading, spacing: 7) {
+      formatPicker
 
-        if store.hasVisibleImportedPalettes, let palette = store.currentImportedPalette {
-          importedPaletteSection(palette)
-        }
-
-        historySection(height: historyHeight(availableHeight: proxy.size.height))
-        footer
+      if store.hasVisibleImportedPalettes, let palette = store.currentImportedPalette {
+        importedPaletteSection(palette)
       }
-      .padding(.horizontal, 9)
-      .padding(.vertical, 9)
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+      historySection
+      footer
     }
+    .padding(.horizontal, 9)
+    .padding(.vertical, 9)
     .frame(minWidth: 380, minHeight: 440)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .background(PlatformColor.color(from: .windowBackgroundColor))
@@ -488,10 +485,10 @@ struct MainWindowRootView: View {
                 }
               }
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, 6)
           }
           .frame(maxWidth: .infinity)
-          .frame(height: 56)
+          .frame(height: 64)
         }
         .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
       }
@@ -501,7 +498,7 @@ struct MainWindowRootView: View {
     .fixedSize(horizontal: false, vertical: true)
   }
 
-  private func historySection(height: CGFloat) -> some View {
+  private var historySection: some View {
     cardContainer {
       if store.history.isEmpty {
         Text("Use Pick or drop an image to capture colors.")
@@ -531,8 +528,9 @@ struct MainWindowRootView: View {
         }
       }
     }
-    .frame(height: height)
+    .frame(minHeight: 140, maxHeight: .infinity)
     .frame(maxWidth: .infinity)
+    .layoutPriority(1)
   }
 
   private var footer: some View {
@@ -564,15 +562,6 @@ struct MainWindowRootView: View {
       }
       .fixedSize()
     }
-  }
-
-  private func historyHeight(availableHeight: CGFloat) -> CGFloat {
-    let footerHeight: CGFloat = 34
-    let formatHeight: CGFloat = 41
-    let spacing: CGFloat = store.hasVisibleImportedPalettes ? 28 : 14
-    let importedHeight: CGFloat = store.hasVisibleImportedPalettes ? 138 : 0
-    let baseHeight = availableHeight - footerHeight - formatHeight - spacing - importedHeight
-    return max(140, baseHeight)
   }
 
   @ViewBuilder
@@ -793,6 +782,10 @@ private struct PaletteSwatchChip: View {
   let toolTip: String
   let action: () -> Void
 
+  private let burstFrameHeight: CGFloat = 64
+  private let restingOffset: CGFloat = 12
+  private let liftDistance: CGFloat = 28
+
   @State private var showBurst = false
   @State private var burstLifted = false
   @State private var burstID = 0
@@ -804,14 +797,16 @@ private struct PaletteSwatchChip: View {
     } label: {
       ZStack {
         swatch
+          .offset(y: restingOffset)
 
         if showBurst {
           swatch
             .opacity(burstLifted ? 0 : 1)
-            .offset(y: burstLifted ? -18 : 0)
+            .offset(y: restingOffset + (burstLifted ? -liftDistance : 0))
             .zIndex(1)
         }
       }
+      .frame(width: 32, height: burstFrameHeight)
     }
     .buttonStyle(.plain)
   }
@@ -834,12 +829,12 @@ private struct PaletteSwatchChip: View {
 
     DispatchQueue.main.async {
       guard burstID == currentBurstID else { return }
-      withAnimation(.easeOut(duration: 0.32)) {
+      withAnimation(.easeOut(duration: 0.50)) {
         burstLifted = true
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.56) {
       guard burstID == currentBurstID else { return }
       burstLifted = false
       showBurst = false
