@@ -65,6 +65,7 @@ struct ImportedPalette: Identifiable {
   let id = UUID()
   let colors: [PickedColor]
   let previewImage: NSImage?
+  let sourceName: String?
   let importedAt: Date
 }
 

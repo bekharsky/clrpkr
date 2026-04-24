@@ -76,95 +76,153 @@ private struct ImportedPaletteSection: View {
   @ObservedObject var store: ClrPkrStore
   let palette: ImportedPalette
   let onCopyText: (String) -> Void
+  @State private var burst: SwatchBurst?
 
   var body: some View {
-    CardContainer {
-      HStack(alignment: .top, spacing: 12) {
-        PreviewImageView(image: palette.previewImage, width: 96, height: 96)
+    CardContainer(contentPadding: 9) {
+      ZStack {
+        HStack(alignment: .top, spacing: 12) {
+          PreviewImageView(image: palette.previewImage, width: 84, height: 84)
 
-        VStack(alignment: .leading, spacing: 10) {
-          HStack(alignment: .top, spacing: 8) {
-            if store.importedPalettes.count > 1 {
-              HStack(spacing: 4) {
-                PagerButton(
-                  symbolName: "chevron.left",
-                  fallbackText: "<",
-                  toolTip: "Previous imported palette",
-                  action: {
-                    store.showImportedPalette(at: store.currentImportedPaletteIndex - 1)
-                  }
-                )
-                .disabled(store.currentImportedPaletteIndex == 0)
+          VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+              if store.importedPalettes.count > 1 {
+                HStack(spacing: 4) {
+                  PagerButton(
+                    symbolName: "chevron.left",
+                    fallbackText: "<",
+                    toolTip: "Previous imported palette",
+                    action: {
+                      store.showImportedPalette(at: store.currentImportedPaletteIndex - 1)
+                    }
+                  )
+                  .disabled(store.currentImportedPaletteIndex == 0)
 
-                Text("\(store.currentImportedPaletteIndex + 1) of \(store.importedPalettes.count)")
-                  .font(.system(size: 11, weight: .medium, design: .monospaced))
-                  .foregroundColor(.secondary)
-                  .frame(minWidth: 42)
+                  Text("\(store.currentImportedPaletteIndex + 1) of \(store.importedPalettes.count)")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .frame(minWidth: 42)
 
-                PagerButton(
-                  symbolName: "chevron.right",
-                  fallbackText: ">",
-                  toolTip: "Next imported palette",
-                  action: {
-                    store.showImportedPalette(at: store.currentImportedPaletteIndex + 1)
-                  }
-                )
-                .disabled(store.currentImportedPaletteIndex >= store.importedPalettes.count - 1)
+                  PagerButton(
+                    symbolName: "chevron.right",
+                    fallbackText: ">",
+                    toolTip: "Next imported palette",
+                    action: {
+                      store.showImportedPalette(at: store.currentImportedPaletteIndex + 1)
+                    }
+                  )
+                  .disabled(store.currentImportedPaletteIndex >= store.importedPalettes.count - 1)
+                }
               }
+
+              Spacer(minLength: 0)
+
+              MenuButton(
+                title: "Copy palette as...",
+                controlSize: .small,
+                items: PaletteExportFormat.allCases.map { format in
+                  MenuButtonItem(title: format.label) {
+                    onCopyText(exportColors(palette.colors, format: format))
+                  }
+                }
+              )
+              .fixedSize()
+
+              SmallIconButton(
+                symbolName: "trash",
+                fallbackText: "Del",
+                toolTip: "Remove imported palette",
+                action: { store.removeCurrentImportedPalette() }
+              )
+              .padding(.trailing, 2)
+            }
+            .padding(.trailing, 2)
+
+            if let sourceName = palette.sourceName, !sourceName.isEmpty {
+              Text(sourceName)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .padding(.leading, 4)
             }
 
             Spacer(minLength: 0)
 
-            MenuButton(
-              title: "Copy palette as...",
-              controlSize: .small,
-              items: PaletteExportFormat.allCases.map { format in
-                MenuButtonItem(title: format.label) {
-                  onCopyText(exportColors(palette.colors, format: format))
-                }
-              }
-            )
-            .fixedSize()
-
-            SmallIconButton(
-              symbolName: "xmark",
-              fallbackText: "x",
-              toolTip: "Remove imported palette",
-              action: { store.removeCurrentImportedPalette() }
-            )
-          }
-
-          ScrollView(.horizontal, showsIndicators: true) {
-            HStack(spacing: 8) {
-              ForEach(palette.colors) { item in
-                PaletteSwatchChip(
-                  color: item.rgbColor,
-                  toolTip: "Copy \(formatColor(item, format: store.format))",
-                  action: {
-                    onCopyText(formatColor(item, format: store.format))
-                  }
-                )
-                .contextMenu {
-                  ForEach(ColorFormat.allCases, id: \.rawValue) { format in
-                    Button("Copy as \(format.label)") {
-                      onCopyText(formatColor(item, format: format))
+            ScrollView(.horizontal, showsIndicators: true) {
+              HStack(spacing: 8) {
+                ForEach(palette.colors) { item in
+                  PaletteSwatchChip(
+                    color: item.rgbColor,
+                    toolTip: swatchToolTip(for: item),
+                    onBurst: showBurst(frame:color:),
+                    action: {
+                      onCopyText(formatColor(item, format: store.format))
+                    }
+                  )
+                  .contextMenu {
+                    ForEach(ColorFormat.allCases, id: \.rawValue) { format in
+                      Button("Copy as \(format.label)") {
+                        onCopyText(formatColor(item, format: format))
+                      }
                     }
                   }
                 }
               }
             }
-            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity)
+            .frame(height: 32)
           }
-          .frame(maxWidth: .infinity)
-          .frame(height: 64)
+          .frame(maxWidth: .infinity, minHeight: 84, alignment: .topLeading)
         }
-        .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
+
+        if let burst {
+          RoundedRectangle(cornerRadius: 11)
+            .fill(PlatformColor.color(from: burst.color))
+            .frame(width: 32, height: 32)
+            .overlay(
+              RoundedRectangle(cornerRadius: 11)
+                .stroke(Color.black.opacity(0.10), lineWidth: 1)
+            )
+            .opacity(burst.isLifted ? 0 : 1)
+            .position(
+              x: burst.frame.midX,
+              y: burst.frame.midY + (burst.isLifted ? -28 : 0)
+            )
+            .allowsHitTesting(false)
+            .zIndex(2)
+        }
       }
-      .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
+      .coordinateSpace(name: "ImportedPaletteSection")
+      .frame(maxWidth: .infinity, minHeight: 84, alignment: .topLeading)
     }
     .frame(maxWidth: .infinity)
     .fixedSize(horizontal: false, vertical: true)
   }
+
+  private func showBurst(frame: CGRect, color: NSColor) {
+    let id = UUID()
+    burst = SwatchBurst(id: id, frame: frame, color: color, isLifted: false)
+
+    DispatchQueue.main.async {
+      guard burst?.id == id else { return }
+      withAnimation(.easeOut(duration: 0.50)) {
+        burst?.isLifted = true
+      }
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.56) {
+      guard burst?.id == id else { return }
+      burst = nil
+    }
+  }
+}
+
+private struct SwatchBurst: Identifiable {
+  let id: UUID
+  let frame: CGRect
+  let color: NSColor
+  var isLifted: Bool
 }
 
 private struct HistorySection: View {
@@ -195,6 +253,12 @@ private struct HistorySection: View {
                     onCopyText(formatColor(item, format: format))
                   }
                 }
+
+                Divider()
+
+                Button("Delete") {
+                  store.removeHistoryItem(id: item.id)
+                }
               }
             }
           }
@@ -205,6 +269,11 @@ private struct HistorySection: View {
     .frame(maxWidth: .infinity)
     .layoutPriority(1)
   }
+}
+
+private func swatchToolTip(for item: PickedColor) -> String {
+  let match = NamedColorLookup.nearestMatch(red: item.red, green: item.green, blue: item.blue)
+  return "\(match.name)\n\(formatColor(item, format: .hex))"
 }
 
 private struct FooterBar: View {

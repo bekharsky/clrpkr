@@ -3,12 +3,18 @@ import SwiftUI
 
 struct CardContainer<Content: View>: View {
   @ViewBuilder let content: () -> Content
+  let contentPadding: CGFloat
+
+  init(contentPadding: CGFloat = 10, @ViewBuilder content: @escaping () -> Content) {
+    self.contentPadding = contentPadding
+    self.content = content
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       content()
     }
-    .padding(10)
+    .padding(contentPadding)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(PlatformColor.cardBackground)
     .cornerRadius(14)
@@ -142,34 +148,19 @@ struct HistoryRowButton: View {
 struct PaletteSwatchChip: View {
   let color: NSColor
   let toolTip: String
+  let onBurst: (CGRect, NSColor) -> Void
   let action: () -> Void
 
-  private let burstFrameHeight: CGFloat = 64
-  private let restingOffset: CGFloat = 12
-  private let liftDistance: CGFloat = 28
-
-  @State private var showBurst = false
-  @State private var burstLifted = false
-  @State private var burstID = 0
-
   var body: some View {
-    Button {
-      triggerBurst()
-      action()
-    } label: {
-      ZStack {
+    GeometryReader { proxy in
+      Button {
+        onBurst(proxy.frame(in: .named("ImportedPaletteSection")), color)
+        action()
+      } label: {
         swatch
-          .offset(y: restingOffset)
-
-        if showBurst {
-          swatch
-            .opacity(burstLifted ? 0 : 1)
-            .offset(y: restingOffset + (burstLifted ? -liftDistance : 0))
-            .zIndex(1)
-        }
       }
-      .frame(width: 32, height: burstFrameHeight)
     }
+    .frame(width: 32, height: 32)
     .buttonStyle(.plain)
   }
 
@@ -183,25 +174,6 @@ struct PaletteSwatchChip: View {
       )
   }
 
-  private func triggerBurst() {
-    burstID += 1
-    let currentBurstID = burstID
-    showBurst = true
-    burstLifted = false
-
-    DispatchQueue.main.async {
-      guard burstID == currentBurstID else { return }
-      withAnimation(.easeOut(duration: 0.50)) {
-        burstLifted = true
-      }
-    }
-
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.56) {
-      guard burstID == currentBurstID else { return }
-      burstLifted = false
-      showBurst = false
-    }
-  }
 }
 
 struct PagerButton: View {
@@ -255,6 +227,13 @@ struct MenuButtonItem {
   let action: () -> Void
 }
 
+final class SoftFocusButton: NSButton {
+  override var focusRingType: NSFocusRingType {
+    get { .none }
+    set { }
+  }
+}
+
 struct NativeButton: NSViewRepresentable {
   let title: String
   let controlSize: NSControl.ControlSize
@@ -266,7 +245,7 @@ struct NativeButton: NSViewRepresentable {
   }
 
   func makeNSView(context: Context) -> NSButton {
-    let button = NSButton(title: title, target: context.coordinator, action: #selector(Coordinator.handlePress(_:)))
+    let button = SoftFocusButton(title: title, target: context.coordinator, action: #selector(Coordinator.handlePress(_:)))
     button.bezelStyle = .rounded
     button.controlSize = controlSize
     button.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: controlSize))
@@ -372,7 +351,7 @@ struct MenuButton: NSViewRepresentable {
   }
 
   func makeNSView(context: Context) -> NSButton {
-    let button = NSButton(title: title, target: context.coordinator, action: #selector(Coordinator.showMenu(_:)))
+    let button = SoftFocusButton(title: title, target: context.coordinator, action: #selector(Coordinator.showMenu(_:)))
     button.bezelStyle = .rounded
     button.controlSize = controlSize
     button.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: controlSize))
