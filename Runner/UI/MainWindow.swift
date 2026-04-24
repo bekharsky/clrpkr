@@ -400,13 +400,8 @@ struct MainWindowRootView: View {
   }
 
   private var formatPicker: some View {
-    Picker("", selection: $store.format) {
-      ForEach(ColorFormat.allCases, id: \.rawValue) { format in
-        Text(format.label).tag(format)
-      }
-    }
-    .pickerStyle(.segmented)
-    .frame(height: 34)
+    FormatPillControl(selection: $store.format, formats: ColorFormat.allCases)
+      .frame(height: 34)
   }
 
   private func importedPaletteSection(_ palette: ImportedPalette) -> some View {
@@ -931,6 +926,71 @@ private struct NativeButton: NSViewRepresentable {
     func handlePress(_ sender: NSButton) {
       action()
     }
+  }
+}
+
+private struct FormatPillControl: View {
+  @Binding var selection: ColorFormat
+  let formats: [ColorFormat]
+
+  private let controlHeight: CGFloat = 34
+  private let inset: CGFloat = 4
+  private let spacing: CGFloat = 4
+  private let activeHeight: CGFloat = 26
+  private let activeCornerRadius: CGFloat = 9
+  private let trackCornerRadius: CGFloat = 11
+
+  var body: some View {
+    GeometryReader { proxy in
+      let activeWidth = segmentWidth(totalWidth: proxy.size.width)
+
+      ZStack(alignment: .topLeading) {
+        RoundedRectangle(cornerRadius: trackCornerRadius)
+          .fill(Color.black.opacity(0.075))
+
+        if let selectedIndex = formats.firstIndex(of: selection) {
+          RoundedRectangle(cornerRadius: activeCornerRadius)
+            .fill(Color.white)
+            .frame(width: activeWidth, height: activeHeight)
+            .overlay(
+              RoundedRectangle(cornerRadius: activeCornerRadius)
+                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+            )
+            .offset(x: activeOffset(for: selectedIndex, width: activeWidth), y: inset)
+        }
+
+        HStack(spacing: spacing) {
+          ForEach(formats, id: \.rawValue) { format in
+            Text(format.label)
+              .font(.system(size: 12, weight: .semibold))
+              .foregroundColor(selection == format ? .primary : .secondary)
+              .frame(maxWidth: .infinity)
+              .frame(height: activeHeight)
+              .contentShape(RoundedRectangle(cornerRadius: activeCornerRadius))
+              .onTapGesture {
+                withAnimation(.spring(response: 0.22, dampingFraction: 0.88)) {
+                  selection = format
+                }
+              }
+          }
+        }
+        .padding(inset)
+      }
+      .overlay(
+        RoundedRectangle(cornerRadius: trackCornerRadius)
+          .stroke(Color.black.opacity(0.06), lineWidth: 1)
+      )
+    }
+    .frame(height: controlHeight)
+  }
+
+  private func segmentWidth(totalWidth: CGFloat) -> CGFloat {
+    let availableWidth = totalWidth - (inset * 2) - (spacing * CGFloat(max(formats.count - 1, 0)))
+    return max(0, availableWidth / CGFloat(max(formats.count, 1)))
+  }
+
+  private func activeOffset(for index: Int, width: CGFloat) -> CGFloat {
+    inset + CGFloat(index) * (width + spacing)
   }
 }
 
