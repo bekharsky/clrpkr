@@ -47,31 +47,42 @@ final class MCPServer {
 
     case "tools/list":
       respond(id: id, result: [
-        "tools": [[
-          "name": "pick_color",
-          "description": "Opens an interactive magnifier overlay on screen. The user clicks any pixel to sample its color. Returns hex, rgb, and hsl values of the picked color.",
-          "inputSchema": [
-            "type": "object",
-            "properties": [String: Any]()
-          ]
-        ] as [String: Any]]
+        "tools": [
+          [
+            "name": "pick_color",
+            "description": "Opens an interactive magnifier overlay on screen. The user clicks any pixel to sample its color. Returns hex, rgb, and hsl values of the picked color.",
+            "inputSchema": ["type": "object", "properties": [String: Any]()]
+          ] as [String: Any],
+          [
+            "name": "extract_palette",
+            "description": "Opens a file-picker so the user can choose an image. Extracts the dominant colors from that image and returns a swatch strip plus hex, rgb, and hsl values for every color.",
+            "inputSchema": ["type": "object", "properties": [String: Any]()]
+          ] as [String: Any]
+        ]
       ])
 
     case "tools/call":
       guard
         let params = json["params"] as? [String: Any],
-        let toolName = params["name"] as? String,
-        toolName == "pick_color"
+        let toolName = params["name"] as? String
       else {
         respondError(id: id, code: -32602, message: "Unknown tool or invalid params")
         return
       }
       guard pendingRequestId == nil else {
-        respondError(id: id, code: -32000, message: "A pick is already in progress")
+        respondError(id: id, code: -32000, message: "A tool call is already in progress")
         return
       }
-      pendingRequestId = id
-      startPicker()
+      switch toolName {
+      case "pick_color":
+        pendingRequestId = id
+        startPicker()
+      case "extract_palette":
+        pendingRequestId = id
+        startPaletteExtraction()
+      default:
+        respondError(id: id, code: -32602, message: "Unknown tool: \(toolName)")
+      }
 
     default:
       if id != nil {
@@ -120,6 +131,49 @@ final class MCPServer {
     pendingRequestId = nil
     picker = nil
     respondError(id: id, code: -32000, message: "Color picking was cancelled")
+  }
+
+  // MARK: - Palette extraction lifecycle
+
+  private func startPaletteExtraction() {
+    pickImageAndExtractPalette { [weak self] filename, palette in
+      self?.handlePaletteResult(filename: filename, palette: palette)
+    }
+  }
+
+  private func handlePaletteResult(filename: String?, palette: [PaletteColorBucket]?) {
+    let id = pendingRequestId
+    pendingRequestId = nil
+
+    guard let filename, let palette, !palette.isEmpty else {
+      respondError(id: id, code: -32000, message: "Palette extraction was cancelled or the image could not be read")
+      return
+    }
+
+    var content: [[String: Any]] = []
+
+    // Swatch strip image
+    if let pngData = generateSwatchImage(from: palette) {
+      content.append([
+        "type": "image",
+        "data": pngData.base64EncodedString(),
+        "mimeType": "image/png"
+      ])
+    }
+
+    // Text table
+    var lines: [String] = ["Palette from: \(filename) (\(palette.count) colors)", ""]
+    for (i, bucket) in palette.enumerated() {
+      let r = bucket.red, g = bucket.green, b = bucket.blue
+      let hsl = rgbToHsl(r: r, g: g, b: b)
+      lines.append(String(
+        format: "%d  %@   rgb(%d, %d, %d)   hsl(%d, %d%%, %d%%)",
+        i + 1, bucket.hex, r, g, b, hsl.h, hsl.s, hsl.l
+      ))
+    }
+    content.append(["type": "text", "text": lines.joined(separator: "\n")])
+
+    respond(id: id, result: ["content": content])
   }
 
   // MARK: - JSON-RPC helpers
