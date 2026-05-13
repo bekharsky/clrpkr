@@ -152,17 +152,27 @@ final class MCPServer {
 
     var content: [[String: Any]] = []
 
-    // Text table
+    // Precompute swatches and names
+    struct Row {
+      let swatch: String
+      let hex: String
+      let name: String
+    }
+    let rows: [Row] = palette.map { bucket in
+      let swatch = "![\(bucket.hex)](\(swatchDataURI(for: bucket)))"
+      let match = NamedColorLookup.nearestMatch(red: bucket.red, green: bucket.green, blue: bucket.blue)
+      return Row(swatch: swatch, hex: bucket.hex, name: match.name)
+    }
+
+    // Build table
     var lines: [String] = [
       "Palette from: **\(filename)** (\(palette.count) colors)",
       "",
-      "| Hex | RGB | HSL |",
+      "| | Hex | Name |",
       "|---|---|---|"
     ]
-    for bucket in palette {
-      let r = bucket.red, g = bucket.green, b = bucket.blue
-      let hsl = rgbToHsl(r: r, g: g, b: b)
-      lines.append("| `\(bucket.hex)` | rgb(\(r), \(g), \(b)) | hsl(\(hsl.h), \(hsl.s)%, \(hsl.l)%) |")
+    for row in rows {
+      lines.append("| \(row.swatch) | `\(row.hex)` | \(row.name) |")
     }
     content.append(["type": "text", "text": lines.joined(separator: "\n")])
 
