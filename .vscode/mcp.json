@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "clrpkr": {
+      "type": "stdio",
+      "command": "${workspaceFolder}/MCPServer/.build/release/clrpkr-mcp"
+    }
+  }
+}
