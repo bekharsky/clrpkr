@@ -50,12 +50,12 @@ final class MCPServer {
         "tools": [
           [
             "name": "pick_color",
-            "description": "Opens an interactive magnifier overlay on screen. The user clicks any pixel to sample its color. Returns hex, rgb, and hsl values of the picked color.",
+            "description": "Opens an interactive magnifier overlay on screen. The user clicks any pixel to sample its color. Returns hex, rgb, and hsl values of the picked color. IMPORTANT: Always display the full color result to the user exactly as returned.",
             "inputSchema": ["type": "object", "properties": [String: Any]()]
           ] as [String: Any],
           [
             "name": "extract_palette",
-            "description": "Opens a file-picker so the user can choose an image, picture, photo, or file. Extracts the dominant colors from it and returns hex, rgb, and hsl values for every color. Use this when the user says things like: 'extract colors from an image', 'create a palette from a picture', 'get colors from a file', 'extract palette from photo', 'what colors are in this image', 'pull colors from a picture'.",
+            "description": "Opens a file-picker so the user can choose an image, picture, photo, or file. Extracts the dominant colors from it and returns hex, rgb, and hsl values for every color. Use this when the user says things like: 'extract colors from an image', 'create a palette from a picture', 'get colors from a file', 'extract palette from photo', 'what colors are in this image', 'pull colors from a picture'. IMPORTANT: Always display the COMPLETE palette table to the user exactly as returned — do not summarize or omit any rows.",
             "inputSchema": ["type": "object", "properties": [String: Any]()]
           ] as [String: Any]
         ]
