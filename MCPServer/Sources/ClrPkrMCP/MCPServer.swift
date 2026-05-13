@@ -55,7 +55,7 @@ final class MCPServer {
           ] as [String: Any],
           [
             "name": "extract_palette",
-            "description": "Opens a file-picker so the user can choose an image. Extracts the dominant colors from that image and returns a swatch strip plus hex, rgb, and hsl values for every color.",
+            "description": "Opens a file-picker so the user can choose an image, picture, photo, or file. Extracts the dominant colors from it and returns hex, rgb, and hsl values for every color. Use this when the user says things like: 'extract colors from an image', 'create a palette from a picture', 'get colors from a file', 'extract palette from photo', 'what colors are in this image', 'pull colors from a picture'.",
             "inputSchema": ["type": "object", "properties": [String: Any]()]
           ] as [String: Any]
         ]
@@ -152,24 +152,17 @@ final class MCPServer {
 
     var content: [[String: Any]] = []
 
-    // Swatch strip image
-    if let pngData = generateSwatchImage(from: palette) {
-      content.append([
-        "type": "image",
-        "data": pngData.base64EncodedString(),
-        "mimeType": "image/png"
-      ])
-    }
-
     // Text table
-    var lines: [String] = ["Palette from: \(filename) (\(palette.count) colors)", ""]
-    for (i, bucket) in palette.enumerated() {
+    var lines: [String] = [
+      "Palette from: **\(filename)** (\(palette.count) colors)",
+      "",
+      "| Hex | RGB | HSL |",
+      "|---|---|---|"
+    ]
+    for bucket in palette {
       let r = bucket.red, g = bucket.green, b = bucket.blue
       let hsl = rgbToHsl(r: r, g: g, b: b)
-      lines.append(String(
-        format: "%d  %@   rgb(%d, %d, %d)   hsl(%d, %d%%, %d%%)",
-        i + 1, bucket.hex, r, g, b, hsl.h, hsl.s, hsl.l
-      ))
+      lines.append("| `\(bucket.hex)` | rgb(\(r), \(g), \(b)) | hsl(\(hsl.h), \(hsl.s)%, \(hsl.l)%) |")
     }
     content.append(["type": "text", "text": lines.joined(separator: "\n")])
 

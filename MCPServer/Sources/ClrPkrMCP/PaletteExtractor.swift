@@ -137,32 +137,3 @@ func pickImageAndExtractPalette(completion: @escaping (_ filename: String?, _ pa
   let palette = ImagePaletteExtractor.extractPalette(from: image)
   completion(filename, palette)
 }
-
-// MARK: - Swatch image
-
-/// Generates a horizontal strip of color swatches as PNG data.
-func generateSwatchImage(from palette: [PaletteColorBucket]) -> Data? {
-  guard !palette.isEmpty else { return nil }
-  let swatchSize = 72
-  let totalWidth  = swatchSize * palette.count
-  let totalHeight = swatchSize
-
-  guard let ctx = CGContext(
-    data: nil,
-    width: totalWidth,
-    height: totalHeight,
-    bitsPerComponent: 8,
-    bytesPerRow: 0,
-    space: CGColorSpaceCreateDeviceRGB(),
-    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-  ) else { return nil }
-
-  for (i, bucket) in palette.enumerated() {
-    let c = bucket.rgbColor
-    ctx.setFillColor(red: c.redComponent, green: c.greenComponent, blue: c.blueComponent, alpha: 1)
-    ctx.fill(CGRect(x: i * swatchSize, y: 0, width: swatchSize, height: swatchSize))
-  }
-
-  guard let cgImage = ctx.makeImage() else { return nil }
-  return NSBitmapImageRep(cgImage: cgImage).representation(using: .png, properties: [:])
-}
