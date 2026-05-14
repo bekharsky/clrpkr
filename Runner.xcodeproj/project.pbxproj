@@ -9,10 +9,7 @@
 /* Begin PBXBuildFile section */
 		331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* RunnerTests.swift */; };
 		33A1F0D52C00000600000001 /* ClrPkrStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0D32C00000600000001 /* ClrPkrStoreTests.swift */; };
-		33A1F0A12C00000100000001 /* ScreenColorPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0A02C00000100000001 /* ScreenColorPicker.swift */; };
 		33A1F0C02C00000300000001 /* ColorModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0B42C00000300000001 /* ColorModels.swift */; };
-		33A1F0C12C00000300000001 /* ImagePaletteExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0B52C00000300000001 /* ImagePaletteExtractor.swift */; };
-		33A1F0C62C00000400000001 /* ColorNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0BA2C00000400000001 /* ColorNaming.swift */; };
 		33A1F0D02C00000500000001 /* ClrPkrStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0CD2C00000500000001 /* ClrPkrStore.swift */; };
 		33A1F0D12C00000500000001 /* MainWindowRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0CE2C00000500000001 /* MainWindowRootView.swift */; };
 		33A1F0E02C00000700000001 /* ImportedPaletteSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0DB2C00000700000001 /* ImportedPaletteSection.swift */; };
@@ -54,10 +51,7 @@
 		331C80D7294CF71000263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		33A1F0D32C00000600000001 /* ClrPkrStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClrPkrStoreTests.swift; sourceTree = "<group>"; };
 		333000ED22D3DE5D00554162 /* Warnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Warnings.xcconfig; sourceTree = "<group>"; };
-		33A1F0A02C00000100000001 /* ScreenColorPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenColorPicker.swift; sourceTree = "<group>"; };
 		33A1F0B42C00000300000001 /* ColorModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorModels.swift; sourceTree = "<group>"; };
-		33A1F0B52C00000300000001 /* ImagePaletteExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePaletteExtractor.swift; sourceTree = "<group>"; };
-		33A1F0BA2C00000400000001 /* ColorNaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorNaming.swift; sourceTree = "<group>"; };
 		33A1F0CD2C00000500000001 /* ClrPkrStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClrPkrStore.swift; sourceTree = "<group>"; };
 		33A1F0CE2C00000500000001 /* MainWindowRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowRootView.swift; sourceTree = "<group>"; };
 		33A1F0DB2C00000700000001 /* ImportedPaletteSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportedPaletteSection.swift; sourceTree = "<group>"; };
@@ -117,7 +111,6 @@
 		33A1F0B12C00000200000001 /* Picker */ = {
 			isa = PBXGroup;
 			children = (
-				33A1F0A02C00000100000001 /* ScreenColorPicker.swift */,
 			);
 			path = Picker;
 			sourceTree = "<group>";
@@ -126,10 +119,8 @@
 			isa = PBXGroup;
 			children = (
 				33A1F0CD2C00000500000001 /* ClrPkrStore.swift */,
-				33A1F0BA2C00000400000001 /* ColorNaming.swift */,
 				33A1F0B42C00000300000001 /* ColorModels.swift */,
 				33A1F0DC2C00000700000001 /* HistorySection.swift */,
-				33A1F0B52C00000300000001 /* ImagePaletteExtractor.swift */,
 				33A1F0DB2C00000700000001 /* ImportedPaletteSection.swift */,
 				33A1F0DD2C00000700000001 /* InteractiveControls.swift */,
 				33CC11122044BFA00003C045 /* MainWindow.swift */,
@@ -228,6 +219,9 @@
 			dependencies = (
 			);
 			name = Runner;
+			packageProductDependencies = (
+				33CLRPKR2C00000800000002 /* ClrPkrCore */,
+			);
 			productName = Runner;
 			productReference = 33CC10ED2044A3C60003C045 /* clrpkr.app */;
 			productType = "com.apple.product-type.application";
@@ -268,6 +262,9 @@
 				Base,
 			);
 			mainGroup = 33CC10E42044A3C60003C045;
+			packageReferences = (
+				33CLRPKR2C00000800000001 /* XCLocalSwiftPackageReference "../ClrPkrCore" */,
+			);
 			productRefGroup = 33CC10EE2044A3C60003C045 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -312,15 +309,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				33A1F0D02C00000500000001 /* ClrPkrStore.swift in Sources */,
-				33A1F0C62C00000400000001 /* ColorNaming.swift in Sources */,
 				33A1F0C02C00000300000001 /* ColorModels.swift in Sources */,
 				33A1F0E12C00000700000001 /* HistorySection.swift in Sources */,
-				33A1F0C12C00000300000001 /* ImagePaletteExtractor.swift in Sources */,
 				33A1F0E02C00000700000001 /* ImportedPaletteSection.swift in Sources */,
 				33A1F0E22C00000700000001 /* InteractiveControls.swift in Sources */,
 				33CC11132044BFA00003C045 /* MainWindow.swift in Sources */,
 				33A1F0D12C00000500000001 /* MainWindowRootView.swift in Sources */,
-				33A1F0A12C00000100000001 /* ScreenColorPicker.swift in Sources */,
 				33A1F0E32C00000700000001 /* SharedControls.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				33A1F0E42C00000700000001 /* StatusBarController.swift in Sources */,
@@ -433,7 +427,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -515,7 +509,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -565,7 +559,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -613,6 +607,21 @@
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		33CLRPKR2C00000800000001 /* XCLocalSwiftPackageReference "../ClrPkrCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ClrPkrCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		33CLRPKR2C00000800000002 /* ClrPkrCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ClrPkrCore;
+			package = 33CLRPKR2C00000800000001 /* XCLocalSwiftPackageReference "../ClrPkrCore" */;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCConfigurationList section */
 		331C80DE294CF71000263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {

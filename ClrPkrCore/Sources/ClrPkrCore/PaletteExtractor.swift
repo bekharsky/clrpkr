@@ -1,28 +1,12 @@
-// Palette extraction logic adapted from Runner/UI/ImagePaletteExtractor.swift
-// and Runner/UI/ColorModels.swift.
+// Palette extraction logic for ClrPkr
 import Cocoa
 import Compression
 import CoreGraphics
 
-// MARK: - Model
-
-struct PaletteColorBucket {
-  let color: NSColor
-  let pixelCount: Int
-
-  var rgbColor: NSColor { color.usingColorSpace(.deviceRGB) ?? color }
-
-  var red:   Int { Int(round(rgbColor.redComponent   * 255)) }
-  var green: Int { Int(round(rgbColor.greenComponent * 255)) }
-  var blue:  Int { Int(round(rgbColor.blueComponent  * 255)) }
-
-  var hex: String { String(format: "#%02X%02X%02X", red, green, blue) }
-}
-
 // MARK: - Extraction
 
-enum ImagePaletteExtractor {
-  static func extractPalette(from image: NSImage, maxColors: Int = 8) -> [PaletteColorBucket] {
+public enum ImagePaletteExtractor {
+  public static func extractPalette(from image: NSImage, maxColors: Int = 8) -> [PaletteColorBucket] {
     guard
       maxColors > 0,
       let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
@@ -118,7 +102,7 @@ enum ImagePaletteExtractor {
 /// Opens a native file-open panel and extracts the palette from the chosen image.
 /// Calls `completion` on the main thread with `(filename, palette)` on success
 /// or `(nil, nil)` when the user cancels.
-func pickImageAndExtractPalette(completion: @escaping (_ filename: String?, _ palette: [PaletteColorBucket]?) -> Void) {
+public func pickImageAndExtractPalette(completion: @escaping (_ filename: String?, _ palette: [PaletteColorBucket]?) -> Void) {
   let panel = NSOpenPanel()
   panel.title = "Choose an image"
   panel.prompt = "Extract Palette"
@@ -143,7 +127,7 @@ func pickImageAndExtractPalette(completion: @escaping (_ filename: String?, _ pa
 
 /// Returns a `data:image/png;base64,…` string for a 16×16 opaque color swatch.
 /// Generates a minimal compressed PNG by hand (no EXIF, no extra chunks) for speed.
-func swatchDataURI(for bucket: PaletteColorBucket) -> String {
+public func swatchDataURI(for bucket: PaletteColorBucket) -> String {
   let r = UInt8(clamping: bucket.red)
   let g = UInt8(clamping: bucket.green)
   let b = UInt8(clamping: bucket.blue)

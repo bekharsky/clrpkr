@@ -1,4 +1,5 @@
 import AppKit
+import ClrPkrCore
 import Foundation
 
 final class MCPServer {
@@ -113,17 +114,32 @@ final class MCPServer {
     picker = nil
 
     let r = payload.red, g = payload.green, b = payload.blue
-    let hsl = rgbToHsl(r: r, g: g, b: b)
+    let hsl = ColorUtilities.rgbToHsl(r: r, g: g, b: b)
 
-    let text = """
-      hex: \(payload.hex)
-      rgb: rgb(\(r), \(g), \(b))
-      hsl: hsl(\(hsl.h), \(hsl.s)%, \(hsl.l)%)
-      """
+    // Create color bucket for swatch generation
+    let nsColor = NSColor(
+      calibratedRed: CGFloat(r) / 255.0,
+      green: CGFloat(g) / 255.0,
+      blue: CGFloat(b) / 255.0,
+      alpha: 1.0
+    )
+    let bucket = PaletteColorBucket(color: nsColor, pixelCount: 1)
+    let swatch = "![\(payload.hex)](\(swatchDataURI(for: bucket)))"
+    
+    // Get color name
+    let match = NamedColorLookup.nearestMatch(red: r, green: g, blue: b)
 
-    respond(id: id, result: [
-      "content": [["type": "text", "text": text] as [String: Any]]
-    ])
+    let lines = [
+      "\(swatch) \(match.name)",
+      "hex: \(payload.hex)",
+      "rgb: rgb(\(r), \(g), \(b))",
+      "hsl: hsl(\(hsl.h), \(hsl.s)%, \(hsl.l)%)"
+    ]
+    
+    var content: [[String: Any]] = []
+    content.append(["type": "text", "text": lines.joined(separator: "\n")])
+
+    respond(id: id, result: ["content": content])
   }
 
   private func handleCancel() {
@@ -205,21 +221,4 @@ final class MCPServer {
     FileHandle.standardOutput.write((line + "\n").data(using: .utf8)!)
   }
 
-  // MARK: - Color math
-
-  private func rgbToHsl(r: Int, g: Int, b: Int) -> (h: Int, s: Int, l: Int) {
-    let rf = Double(r) / 255, gf = Double(g) / 255, bf = Double(b) / 255
-    let cMax = max(rf, gf, bf), cMin = min(rf, gf, bf)
-    let l = (cMax + cMin) / 2
-    guard cMax != cMin else { return (0, 0, Int(round(l * 100))) }
-    let d = cMax - cMin
-    let s = l > 0.5 ? d / (2 - cMax - cMin) : d / (cMax + cMin)
-    var h: Double
-    switch cMax {
-    case rf: h = (gf - bf) / d + (gf < bf ? 6 : 0)
-    case gf: h = (bf - rf) / d + 2
-    default:  h = (rf - gf) / d + 4
-    }
-    return (Int(round(h / 6 * 360)), Int(round(s * 100)), Int(round(l * 100)))
-  }
 }
