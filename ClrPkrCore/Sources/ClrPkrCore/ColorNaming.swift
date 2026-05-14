@@ -7,8 +7,8 @@ struct NamedColorEntry {
   let name: String
 }
 
-enum NamedColorLookup {
-  static let aboutAttribution = """
+public enum NamedColorLookup {
+  public static let aboutAttribution = """
   Color names are based on ColourPicker by Stuart Langridge:
   https://github.com/stuartlangridge/colourpicker
   Derived from Name That Color by Chirag Mehta:
@@ -41,7 +41,7 @@ enum NamedColorLookup {
       )
     }
 
-  static func nearestMatch(red: Int, green: Int, blue: Int) -> NamedColorMatch {
+  public static func nearestMatch(red: Int, green: Int, blue: Int) -> NamedColorMatch {
     var bestEntry = entries[0]
     var bestDistance = Int.max
 

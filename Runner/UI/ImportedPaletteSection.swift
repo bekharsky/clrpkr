@@ -1,4 +1,5 @@
 import AppKit
+import ClrPkrCore
 import SwiftUI
 
 struct ImportedPaletteSection: View {

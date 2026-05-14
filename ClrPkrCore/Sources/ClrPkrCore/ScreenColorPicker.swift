@@ -1,16 +1,23 @@
-// Adapted from Runner/Picker/ScreenColorPicker.swift.
-// Changes from original: added `onCancel` callback.
+// Screen color picker with magnifier lens
 import Cocoa
 
-struct PickedColorPayload {
-  let red: Int
-  let green: Int
-  let blue: Int
-  let hex: String
-  let previewPng: Data
+public struct PickedColorPayload {
+  public let red: Int
+  public let green: Int
+  public let blue: Int
+  public let hex: String
+  public let previewPng: Data
+  
+  public init(red: Int, green: Int, blue: Int, hex: String, previewPng: Data) {
+    self.red = red
+    self.green = green
+    self.blue = blue
+    self.hex = hex
+    self.previewPng = previewPng
+  }
 }
 
-final class ScreenColorPicker {
+public final class ScreenColorPicker {
   private let hideWindow: () -> Void
   private let showWindow: () -> Void
   private let onPick: (PickedColorPayload) -> Void
@@ -19,7 +26,7 @@ final class ScreenColorPicker {
   private var lensPanel: PickerLensPanel?
   private var lensView: PickerLensView?
 
-  init(
+  public init(
     hideWindow: @escaping () -> Void,
     showWindow: @escaping () -> Void,
     onPick: @escaping (PickedColorPayload) -> Void,
@@ -31,7 +38,7 @@ final class ScreenColorPicker {
     self.onCancel = onCancel
   }
 
-  func start() {
+  public func start() {
     guard overlayPanels.isEmpty, lensPanel == nil else {
       return
     }

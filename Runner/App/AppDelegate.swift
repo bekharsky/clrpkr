@@ -1,4 +1,5 @@
 import Cocoa
+import ClrPkrCore
 
 @main
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
