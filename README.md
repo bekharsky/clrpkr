@@ -121,16 +121,19 @@ The MCP server allows AI assistants to interact with ClrPkr's color picking func
 ### Distribution Options
 
 **Option 1: Distribute Source**
+
 - Users clone the repo and build the MCP server themselves
 - Best for developers comfortable with Swift
 
 **Option 2: Distribute Binary**
+
 - Build release binary: `cd MCPServer && swift build -c release`
 - Archive the executable: `tar -czf clrpkr-mcp.tar.gz -C .build/release clrpkr-mcp`
 - Users extract and configure the path in their MCP settings
 - Note: Binary must be code-signed for Gatekeeper on macOS
 
 **Option 3: Homebrew Formula**
+
 - Create a Homebrew tap for easy installation
 - Users can install with: `brew install your-tap/clrpkr-mcp`
 - Automatically handles building and path configuration
