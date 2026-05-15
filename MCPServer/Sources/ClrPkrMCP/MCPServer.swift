@@ -96,9 +96,13 @@ final class MCPServer {
   // MARK: - Picker lifecycle
 
   private func startPicker() {
+    // Capture the frontmost app BEFORE starting the picker
+    // because the picker will activate our app, changing the frontmost app
+    windowManager.captureFrontmostApp()
+    
     picker = ScreenColorPicker(
       hideWindow: { [weak self] in
-        self?.windowManager.hideFrontmostWindow()
+        self?.windowManager.hideWindow()
       },
       showWindow: { [weak self] in
         self?.windowManager.showHiddenWindow()
