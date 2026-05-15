@@ -1,32 +1,44 @@
+// Screen color picker with magnifier lens
 import Cocoa
 
-struct PickedColorPayload {
-  let red: Int
-  let green: Int
-  let blue: Int
-  let hex: String
-  let previewPng: Data
+public struct PickedColorPayload {
+  public let red: Int
+  public let green: Int
+  public let blue: Int
+  public let hex: String
+  public let previewPng: Data
+  
+  public init(red: Int, green: Int, blue: Int, hex: String, previewPng: Data) {
+    self.red = red
+    self.green = green
+    self.blue = blue
+    self.hex = hex
+    self.previewPng = previewPng
+  }
 }
 
-final class ScreenColorPicker {
+public final class ScreenColorPicker {
   private let hideWindow: () -> Void
   private let showWindow: () -> Void
   private let onPick: (PickedColorPayload) -> Void
+  private let onCancel: (() -> Void)?
   private var overlayPanels: [PickerOverlayPanel] = []
   private var lensPanel: PickerLensPanel?
   private var lensView: PickerLensView?
 
-  init(
+  public init(
     hideWindow: @escaping () -> Void,
     showWindow: @escaping () -> Void,
-    onPick: @escaping (PickedColorPayload) -> Void
+    onPick: @escaping (PickedColorPayload) -> Void,
+    onCancel: (() -> Void)? = nil
   ) {
     self.hideWindow = hideWindow
     self.showWindow = showWindow
     self.onPick = onPick
+    self.onCancel = onCancel
   }
 
-  func start() {
+  public func start() {
     guard overlayPanels.isEmpty, lensPanel == nil else {
       return
     }
@@ -93,6 +105,7 @@ final class ScreenColorPicker {
   func cancel() {
     tearDownOverlay()
     showWindow()
+    onCancel?()
   }
 
   fileprivate func refresh(at mousePoint: CGPoint) {
@@ -198,11 +211,10 @@ final class PickerOverlayView: NSView {
   }
 
   override func keyDown(with event: NSEvent) {
-    if event.keyCode == 53 {
+    if event.keyCode == 53 {  // Escape
       bridge?.cancel()
       return
     }
-
     super.keyDown(with: event)
   }
 }
@@ -251,7 +263,6 @@ final class PickerLensView: NSView {
     }
 
     let lensRect = bounds
-
     let bubbleRadius: CGFloat = 20
     let bubblePath = NSBezierPath(
       roundedRect: lensRect,
@@ -301,17 +312,13 @@ final class PickerLensView: NSView {
       .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .bold),
       .foregroundColor: NSColor(calibratedWhite: 0.95, alpha: 1)
     ]
-    label.draw(
-      at: CGPoint(x: swatchRect.maxX + 8, y: 12),
-      withAttributes: attributes
-    )
+    label.draw(at: CGPoint(x: swatchRect.maxX + 8, y: 12), withAttributes: attributes)
   }
 
   private func drawGrid(in rect: CGRect, context: CGContext) {
     context.saveGState()
     context.setStrokeColor(NSColor(calibratedWhite: 1, alpha: 0.10).cgColor)
     context.setLineWidth(1)
-
     let cellSize = rect.width / 15
     for index in 1..<15 {
       let offset = rect.minX + CGFloat(index) * cellSize
@@ -323,7 +330,6 @@ final class PickerLensView: NSView {
       context.move(to: CGPoint(x: rect.minX, y: offset))
       context.addLine(to: CGPoint(x: rect.maxX, y: offset))
     }
-
     context.strokePath()
     context.restoreGState()
   }
@@ -336,7 +342,6 @@ final class PickerLensView: NSView {
       width: cellSize,
       height: cellSize
     )
-
     context.saveGState()
     context.setStrokeColor(NSColor(calibratedWhite: 1, alpha: 0.75).cgColor)
     context.setLineWidth(2)
@@ -344,6 +349,8 @@ final class PickerLensView: NSView {
     context.restoreGState()
   }
 }
+
+// MARK: - Pixel sampling
 
 private struct PixelSample {
   let red: Int
@@ -424,7 +431,6 @@ private enum PixelSampler {
     let half = floor(previewSize / 2)
     let originX = max(0, min(pixelX - half, maxWidth - previewSize))
     let originY = max(0, min(pixelY - half, maxHeight - previewSize))
-
     return CGDisplayCreateImage(
       displayId,
       rect: CGRect(x: originX, y: originY, width: previewSize, height: previewSize)

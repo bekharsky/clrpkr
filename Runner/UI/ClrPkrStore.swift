@@ -1,4 +1,5 @@
 import AppKit
+import ClrPkrCore
 import SwiftUI
 
 final class ClrPkrStore: ObservableObject {

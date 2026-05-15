@@ -1,4 +1,5 @@
 import Cocoa
+import ClrPkrCore
 
 enum ColorFormat: Int, CaseIterable {
   case hex
@@ -46,19 +47,6 @@ struct PickedColor: Identifiable {
 struct RecentPickMenuItem {
   let text: String
   let color: NSColor
-}
-
-struct NamedColorMatch {
-  let name: String
-  let matchedRed: Int
-  let matchedGreen: Int
-  let matchedBlue: Int
-  let distanceSquared: Int
-}
-
-struct PaletteColorBucket {
-  let color: NSColor
-  let pixelCount: Int
 }
 
 struct ImportedPalette: Identifiable {
