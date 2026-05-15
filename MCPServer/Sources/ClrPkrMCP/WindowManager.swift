@@ -6,7 +6,7 @@ import ApplicationServices
 final class WindowManager {
   private var targetApp: NSRunningApplication?
   private var targetWindow: AXUIElement?
-  private var wasHidden = false
+  private var wasMinimized = false
   
   /// Captures the currently frontmost application for later window manipulation.
   /// Call this BEFORE starting the picker to remember which app to hide.
@@ -55,19 +55,7 @@ final class WindowManager {
       return false
     }
     
-    // Check if the window is already hidden
-    var isHidden: AnyObject?
-    AXUIElementCopyAttributeValue(
-      window as! AXUIElement,
-      kAXHiddenAttribute as CFString,
-      &isHidden
-    )
-    
-    wasHidden = (isHidden as? Bool) ?? false
-    NSLog("WindowManager: Window was already hidden: \(wasHidden)")
-    
-    // Try to minimize the window instead of hiding it
-    // (Many apps like VS Code don't support the hidden attribute)
+    // Check if the window is already minimized
     var isMinimized: AnyObject?
     AXUIElementCopyAttributeValue(
       window as! AXUIElement,
@@ -75,7 +63,7 @@ final class WindowManager {
       &isMinimized
     )
     
-    let wasMinimized = (isMinimized as? Bool) ?? false
+    wasMinimized = (isMinimized as? Bool) ?? false
     NSLog("WindowManager: Window was already minimized: \(wasMinimized)")
     
     if wasMinimized {
@@ -100,71 +88,7 @@ final class WindowManager {
     }
   }
   
-  /// Hides the main window of the currently active (frontmost) application.
-  /// Returns true if successful.
-  /// @deprecated Use captureFrontmostApp() followed by hideWindow() instead.
-  @discardableResult
-  func hideFrontmostWindow() -> Bool {
-    guard let frontApp = NSWorkspace.shared.frontmostApplication,
-          frontApp.bundleIdentifier != Bundle.main.bundleIdentifier else {
-      NSLog("WindowManager: No frontmost app or frontmost is self")
-      return false
-    }
-    
-    NSLog("WindowManager: Attempting to hide window for \(frontApp.localizedName ?? "unknown") (PID: \(frontApp.processIdentifier))")
-    
-    // Check if we have accessibility permissions
-    let hasPerm = AXIsProcessTrusted()
-    NSLog("WindowManager: Accessibility permission granted: \(hasPerm)")
-    guard hasPerm else {
-      NSLog("WindowManager: Accessibility permission not granted - cannot hide window")
-      return false
-    }
-    
-    let appElement = AXUIElementCreateApplication(frontApp.processIdentifier)
-    var windowRef: AnyObject?
-    
-    // Get the focused window
-    let result = AXUIElementCopyAttributeValue(
-      appElement,
-      kAXFocusedWindowAttribute as CFString,
-      &windowRef
-    )
-    
-    guard result == .success, let window = windowRef else {
-      NSLog("WindowManager: Could not get focused window")
-      return false
-    }
-    
-    // Check if the window is already hidden
-    var isHidden: AnyObject?
-    AXUIElementCopyAttributeValue(
-      window as! AXUIElement,
-      kAXHiddenAttribute as CFString,
-      &isHidden
-    )
-    
-    wasHidden = (isHidden as? Bool) ?? false
-    
-    // Hide the window
-    let trueValue: CFTypeRef = kCFBooleanTrue
-    let hideResult = AXUIElementSetAttributeValue(
-      window as! AXUIElement,
-      kAXHiddenAttribute as CFString,
-      trueValue
-    )
-    
-    if hideResult == .success {
-      NSLog("WindowManager: Successfully hid window for \(frontApp.localizedName ?? "unknown")")
-      targetApp = frontApp
-      return true
-    } else {
-      NSLog("WindowManager: Failed to hide window: \(hideResult.rawValue)")
-      return false
-    }
-  }
-  
-  /// Restores the previously hidden window.
+  /// Restores the previously minimized window.
   func showHiddenWindow() {
     guard let app = targetApp else {
       NSLog("WindowManager: No target app to restore")
@@ -179,7 +103,7 @@ final class WindowManager {
     NSLog("WindowManager: Attempting to restore window for \(app.localizedName ?? "unknown")")
     
     // Only restore if we actually minimized it
-    guard !wasHidden else {
+    guard !wasMinimized else {
       NSLog("WindowManager: Window was already minimized before we started, not restoring")
       targetApp = nil
       targetWindow = nil
@@ -215,7 +139,7 @@ final class WindowManager {
     
     targetApp = nil
     targetWindow = nil
-    wasHidden = false
+    wasMinimized = false
   }
   
   /// Checks if accessibility permissions are granted.
