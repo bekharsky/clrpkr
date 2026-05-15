@@ -91,6 +91,7 @@ The executable will be at: `MCPServer/.build/release/clrpkr-mcp` (1.4 MB)
 #### Method 1: Pre-built Binary (Recommended for End Users)
 
 **Create distributable archive:**
+
 ```bash
 cd MCPServer
 swift build -c release
@@ -98,6 +99,7 @@ tar -czf clrpkr-mcp-macos.tar.gz -C .build/release clrpkr-mcp
 ```
 
 **User installation:**
+
 ```bash
 # Download and extract
 tar -xzf clrpkr-mcp-macos.tar.gz
@@ -107,6 +109,7 @@ chmod +x ~/bin/clrpkr-mcp
 ```
 
 **Important:** The binary must be code-signed or users will need to:
+
 ```bash
 xattr -d com.apple.quarantine ~/bin/clrpkr-mcp
 ```
@@ -116,22 +119,23 @@ xattr -d com.apple.quarantine ~/bin/clrpkr-mcp
 Create a Homebrew tap repository:
 
 **Formula template:**
+
 ```ruby
 class ClrpkrMcp < Formula
   desc "MCP server for ClrPkr color picker"
   homepage "https://github.com/yourusername/clrpkr"
   url "https://github.com/yourusername/clrpkr/archive/refs/tags/v1.0.0.tar.gz"
   sha256 "..."
-  
+
   depends_on xcode: ["14.0", :build]
-  
+
   def install
     cd "MCPServer" do
       system "swift", "build", "-c", "release", "--disable-sandbox"
       bin.install ".build/release/clrpkr-mcp"
     end
   end
-  
+
   test do
     # Test that the binary exists and is executable
     assert_predicate bin/"clrpkr-mcp", :exist?
@@ -141,6 +145,7 @@ end
 ```
 
 **Users install with:**
+
 ```bash
 brew tap yourusername/clrpkr
 brew install clrpkr-mcp
@@ -149,6 +154,7 @@ brew install clrpkr-mcp
 #### Method 3: Source Distribution (For Developers)
 
 Users clone and build themselves:
+
 ```bash
 git clone https://github.com/yourusername/clrpkr.git
 cd clrpkr/MCPServer
@@ -173,6 +179,7 @@ swift build -c release
 ```
 
 Or if installed via Homebrew:
+
 ```json
 {
   "servers": {
@@ -263,6 +270,7 @@ Both tools open native macOS UI and return results:
 ### Testing the Installation
 
 After configuration, restart the AI assistant and try:
+
 - "pick a color from my screen"
 - "extract colors from an image"
 
