@@ -5,6 +5,7 @@ import Foundation
 final class MCPServer {
   private var picker: ScreenColorPicker?
   private var pendingRequestId: Any?
+  private let windowManager = WindowManager()
 
   // MARK: - Stdin read loop (runs on a background thread)
 
@@ -96,8 +97,12 @@ final class MCPServer {
 
   private func startPicker() {
     picker = ScreenColorPicker(
-      hideWindow: {},
-      showWindow: {},
+      hideWindow: { [weak self] in
+        self?.windowManager.hideFrontmostWindow()
+      },
+      showWindow: { [weak self] in
+        self?.windowManager.showHiddenWindow()
+      },
       onPick: { [weak self] payload in
         self?.handlePick(payload)
       },

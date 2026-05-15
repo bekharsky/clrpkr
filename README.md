@@ -22,7 +22,7 @@ ClrPkr includes a Model Context Protocol (MCP) server that exposes color picking
 - **`pick_color`** - Opens the interactive screen picker and returns hex, rgb, hsl values with visual swatch and color name
 - **`extract_palette`** - Opens file picker to extract dominant colors from images with swatches and names
 
-The MCP server allows AI assistants to help you pick colors and extract palettes directly from conversations.
+The MCP server allows AI assistants to help you pick colors and extract palettes directly from conversations. When picking colors, the IDE window automatically hides to give you an unobstructed view of the screen.
 
 ## Screenshots
 
