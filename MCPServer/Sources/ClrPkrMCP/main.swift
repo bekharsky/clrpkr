@@ -11,6 +11,11 @@ DispatchQueue.main.async {
   if !CGPreflightScreenCaptureAccess() {
     CGRequestScreenCaptureAccess()
   }
+  
+  // Request accessibility permission for window management
+  if !WindowManager.hasAccessibilityPermissions() {
+    WindowManager.requestAccessibilityPermissions()
+  }
 
   let server = MCPServer()
   DispatchQueue.global(qos: .userInitiated).async {

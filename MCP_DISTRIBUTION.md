@@ -189,7 +189,8 @@ Both tools open native macOS UI and return results:
 ## Requirements
 
 - macOS 12.0 or later
-- Screen Recording permission (system will prompt on first use)
+- **Screen Recording permission** (system will prompt on first use) - Required for color picking
+- **Accessibility permission** (system will prompt on first use) - Required to hide IDE window during color picking
 - No additional dependencies required
 
 ## Testing the Installation
