@@ -1,5 +1,21 @@
 # MCP Server
 
+## Available Tools
+
+Both tools open native macOS UI and return results:
+
+- **`pick_color`** - Opens magnified screen picker overlay, returns:
+  - Hex color code
+  - RGB values
+  - HSL values
+  - Visual color swatch (base64 PNG)
+  - Nearest color name
+
+- **`extract_palette`** - Opens file picker for image selection, returns:
+  - Up to 8 dominant colors from the image
+  - Each color with hex, name, and visual swatch
+  - Formatted as markdown table
+
 ## Build
 
 ```bash
