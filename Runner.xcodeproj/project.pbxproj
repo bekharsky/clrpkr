@@ -201,6 +201,9 @@
 				331C80DA294CF71000263BE5 /* PBXTargetDependency */,
 			);
 			name = RunnerTests;
+			packageProductDependencies = (
+				33CLRPKR2C00000800000002 /* ClrPkrCore */,
+			);
 			productName = RunnerTests;
 			productReference = 331C80D5294CF71000263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";

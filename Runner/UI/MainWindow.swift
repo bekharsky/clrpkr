@@ -129,7 +129,9 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
   private func setupToolbar() {
     let toolbar = NSToolbar(identifier: ToolbarIdentifier.main)
     toolbar.delegate = self
-    toolbar.displayMode = .iconAndLabel
+    // Each custom toolbar view already draws its own label. Asking AppKit to
+    // draw labels as well produces a duplicate label on macOS 26.
+    toolbar.displayMode = .iconOnly
     toolbar.sizeMode = .regular
     toolbar.allowsUserCustomization = false
     toolbar.autosavesConfiguration = false

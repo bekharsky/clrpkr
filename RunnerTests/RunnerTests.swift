@@ -1,5 +1,6 @@
 import Cocoa
 import XCTest
+@testable import ClrPkrCore
 @testable import clrpkr
 
 class RunnerTests: XCTestCase {
@@ -47,6 +48,16 @@ class RunnerTests: XCTestCase {
     let image = NSImage(size: NSSize(width: width, height: height))
     image.addRepresentation(bitmap)
     return image
+  }
+
+  private func hexString(for color: NSColor) -> String {
+    let rgb = color.usingColorSpace(.deviceRGB) ?? color
+    return String(
+      format: "#%02X%02X%02X",
+      Int(round(rgb.redComponent * 255)),
+      Int(round(rgb.greenComponent * 255)),
+      Int(round(rgb.blueComponent * 255))
+    )
   }
 
   func testFormatColorHexRgbAndSwiftUIOutputs() {
@@ -104,7 +115,7 @@ class RunnerTests: XCTestCase {
 
     XCTAssertEqual(palette.count, 3)
     XCTAssertEqual(
-      palette.map { formatColor(makePickedColor(red: Int(round(($0.color.usingColorSpace(.deviceRGB) ?? $0.color).redComponent * 255)), green: Int(round(($0.color.usingColorSpace(.deviceRGB) ?? $0.color).greenComponent * 255)), blue: Int(round(($0.color.usingColorSpace(.deviceRGB) ?? $0.color).blueComponent * 255))), format: .hex) },
+      palette.map { hexString(for: $0.color) },
       ["#FF0000", "#00FF00", "#0000FF"]
     )
   }
