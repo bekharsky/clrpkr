@@ -2,16 +2,16 @@
 import PackageDescription
 
 let package = Package(
-  name: "ClrPkrMCP",
+  name: "PipetkaMCP",
   platforms: [.macOS(.v13)],
   dependencies: [
-    .package(path: "../ClrPkrCore")
+    .package(path: "../PipetkaCore")
   ],
   targets: [
     .executableTarget(
-      name: "clrpkr-mcp",
-      dependencies: ["ClrPkrCore"],
-      path: "Sources/ClrPkrMCP"
+      name: "pipetka-mcp",
+      dependencies: ["PipetkaCore"],
+      path: "Sources/PipetkaMCP"
     )
   ]
 )

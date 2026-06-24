@@ -1,8 +1,8 @@
 import AppKit
-import ClrPkrCore
+import PipetkaCore
 import SwiftUI
 
-final class ClrPkrStore: ObservableObject {
+final class PipetkaStore: ObservableObject {
   @Published var history: [PickedColor] = []
   @Published var importedPalettes: [ImportedPalette] = []
   @Published var currentImportedPaletteIndex = 0

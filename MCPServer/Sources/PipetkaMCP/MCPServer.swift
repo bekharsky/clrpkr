@@ -1,5 +1,5 @@
 import AppKit
-import ClrPkrCore
+import PipetkaCore
 import Foundation
 
 final class MCPServer {
@@ -38,7 +38,7 @@ final class MCPServer {
       respond(id: id, result: [
         "protocolVersion": "2024-11-05",
         "capabilities": ["tools": [String: Any]()],
-        "serverInfo": ["name": "clrpkr-mcp", "version": "1.0.0"]
+        "serverInfo": ["name": "pipetka-mcp", "version": "1.0.0"]
       ])
 
     case "notifications/initialized":

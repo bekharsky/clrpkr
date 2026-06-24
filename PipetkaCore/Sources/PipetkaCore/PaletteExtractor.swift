@@ -1,4 +1,4 @@
-// Palette extraction logic for ClrPkr
+// Palette extraction logic for Pipetka
 import Cocoa
 import Compression
 import CoreGraphics

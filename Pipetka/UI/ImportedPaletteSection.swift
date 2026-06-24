@@ -1,9 +1,9 @@
 import AppKit
-import ClrPkrCore
+import PipetkaCore
 import SwiftUI
 
 struct ImportedPaletteSection: View {
-  @ObservedObject var store: ClrPkrStore
+  @ObservedObject var store: PipetkaStore
   let palette: ImportedPalette
   let onCopyText: (String) -> Void
   @State private var burst: SwatchBurst?

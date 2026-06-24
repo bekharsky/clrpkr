@@ -12,14 +12,14 @@ private final class ToolbarHitAreaView: NSView {
 
 final class MainWindow: NSWindow, NSToolbarDelegate {
   private enum ToolbarIdentifier {
-    static let main = NSToolbar.Identifier("com.kharion.clrpkr.main-toolbar")
-    static let onTop = NSToolbarItem.Identifier("com.kharion.clrpkr.toolbar.on-top")
-    static let importItem = NSToolbarItem.Identifier("com.kharion.clrpkr.toolbar.import")
-    static let pick = NSToolbarItem.Identifier("com.kharion.clrpkr.toolbar.pick")
+    static let main = NSToolbar.Identifier("com.kharion.pipetka.main-toolbar")
+    static let onTop = NSToolbarItem.Identifier("com.kharion.pipetka.toolbar.on-top")
+    static let importItem = NSToolbarItem.Identifier("com.kharion.pipetka.toolbar.import")
+    static let pick = NSToolbarItem.Identifier("com.kharion.pipetka.toolbar.pick")
     static let spacer = NSToolbarItem.Identifier.flexibleSpace
   }
 
-  let store = ClrPkrStore()
+  let store = PipetkaStore()
   private weak var pinToolbarItem: NSToolbarItem?
   private weak var countLabel: NSTextField?
   private var titleAccessoryController: NSTitlebarAccessoryViewController?
@@ -46,7 +46,7 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
 
   private func configureWindow() {
     styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
-    title = "ClrPkr"
+    title = "Pipetka"
     updateTitlebarCount(store.history.count)
     titleVisibility = .hidden
     titlebarAppearsTransparent = true
@@ -142,7 +142,7 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
   private func setupTitleAccessory() {
     guard titleAccessoryController == nil else { return }
 
-    let titleLabel = NSTextField(labelWithString: "ClrPkr")
+    let titleLabel = NSTextField(labelWithString: "Pipetka")
     titleLabel.font = .systemFont(ofSize: 14, weight: .semibold)
     titleLabel.textColor = .labelColor
     titleLabel.lineBreakMode = .byTruncatingTail

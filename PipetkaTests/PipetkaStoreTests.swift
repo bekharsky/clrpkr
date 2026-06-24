@@ -1,8 +1,8 @@
 import Cocoa
 import XCTest
-@testable import clrpkr
+@testable import Pipetka
 
-final class ClrPkrStoreTests: XCTestCase {
+final class PipetkaStoreTests: XCTestCase {
 
   private func makeColor(red: Int, green: Int, blue: Int) -> NSColor {
     NSColor(
@@ -13,12 +13,12 @@ final class ClrPkrStoreTests: XCTestCase {
     )
   }
 
-  private func addPick(_ store: ClrPkrStore, red: Int, green: Int, blue: Int) {
+  private func addPick(_ store: PipetkaStore, red: Int, green: Int, blue: Int) {
     store.addPick(red: red, green: green, blue: blue, previewPng: nil)
   }
 
   func testAddPaletteShowsImportedPaletteAndAddsColorsToHistory() {
-    let store = ClrPkrStore()
+    let store = PipetkaStore()
 
     store.addPalette(
       colors: [
@@ -38,7 +38,7 @@ final class ClrPkrStoreTests: XCTestCase {
   }
 
   func testRemoveCurrentImportedPaletteClearsImportedPaletteStateButKeepsHistory() {
-    let store = ClrPkrStore()
+    let store = PipetkaStore()
 
     store.addPalette(
       colors: [makeColor(red: 255, green: 0, blue: 0)],
@@ -53,7 +53,7 @@ final class ClrPkrStoreTests: XCTestCase {
   }
 
   func testShowImportedPaletteSelectsRequestedPalette() {
-    let store = ClrPkrStore()
+    let store = PipetkaStore()
 
     store.addPalette(colors: [makeColor(red: 17, green: 34, blue: 51)], previewImage: nil)
     store.addPalette(colors: [makeColor(red: 68, green: 85, blue: 102)], previewImage: nil)
@@ -68,7 +68,7 @@ final class ClrPkrStoreTests: XCTestCase {
   }
 
   func testCurrentRecentPickItemsUsesCurrentFormatAndIsLimitedToTen() {
-    let store = ClrPkrStore()
+    let store = PipetkaStore()
 
     for value in 0..<12 {
       addPick(store, red: value, green: value, blue: value)
@@ -83,7 +83,7 @@ final class ClrPkrStoreTests: XCTestCase {
   }
 
   func testFormatChangePublishesRecentPickItemsInUpdatedFormat() {
-    let store = ClrPkrStore()
+    let store = PipetkaStore()
     var publishedItems: [RecentPickMenuItem] = []
     store.onRecentPicksChanged = { publishedItems = $0 }
 
@@ -97,7 +97,7 @@ final class ClrPkrStoreTests: XCTestCase {
   }
 
   func testClearAllResetsHistoryAndImportedPalettes() {
-    let store = ClrPkrStore()
+    let store = PipetkaStore()
 
     addPick(store, red: 1, green: 2, blue: 3)
     store.addPalette(colors: [makeColor(red: 10, green: 20, blue: 30)], previewImage: nil)

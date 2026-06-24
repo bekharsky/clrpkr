@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "33CC10EC2044A3C60003C045"
-               BuildableName = "clrpkr.app"
-               BlueprintName = "Runner"
-               ReferencedContainer = "container:Runner.xcodeproj">
+               BuildableName = "Pipetka.app"
+               BlueprintName = "Pipetka"
+               ReferencedContainer = "container:Pipetka.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -31,9 +31,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "33CC10EC2044A3C60003C045"
-            BuildableName = "clrpkr.app"
-            BlueprintName = "Runner"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            BuildableName = "Pipetka.app"
+            BlueprintName = "Pipetka"
+            ReferencedContainer = "container:Pipetka.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -43,9 +43,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "331C80D4294CF70F00263BE5"
-               BuildableName = "RunnerTests.xctest"
-               BlueprintName = "RunnerTests"
-               ReferencedContainer = "container:Runner.xcodeproj">
+               BuildableName = "PipetkaTests.xctest"
+               BlueprintName = "PipetkaTests"
+               ReferencedContainer = "container:Pipetka.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -66,9 +66,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "33CC10EC2044A3C60003C045"
-            BuildableName = "clrpkr.app"
-            BlueprintName = "Runner"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            BuildableName = "Pipetka.app"
+            BlueprintName = "Pipetka"
+            ReferencedContainer = "container:Pipetka.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -83,9 +83,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "33CC10EC2044A3C60003C045"
-            BuildableName = "clrpkr.app"
-            BlueprintName = "Runner"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            BuildableName = "Pipetka.app"
+            BlueprintName = "Pipetka"
+            ReferencedContainer = "container:Pipetka.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

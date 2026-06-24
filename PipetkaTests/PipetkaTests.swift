@@ -1,9 +1,9 @@
 import Cocoa
 import XCTest
-@testable import ClrPkrCore
-@testable import clrpkr
+@testable import PipetkaCore
+@testable import Pipetka
 
-class RunnerTests: XCTestCase {
+class PipetkaTests: XCTestCase {
 
   private func makePickedColor(red: Int, green: Int, blue: Int) -> PickedColor {
     PickedColor(

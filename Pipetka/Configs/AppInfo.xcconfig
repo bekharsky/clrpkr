@@ -1,10 +1,10 @@
 // Application-level settings for the macOS target.
 
 // The application's name.
-PRODUCT_NAME = clrpkr
+PRODUCT_NAME = Pipetka
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.kharion.clrpkr
+PRODUCT_BUNDLE_IDENTIFIER = com.kharion.pipetka
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 Kharion. All rights reserved.

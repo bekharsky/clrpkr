@@ -47,7 +47,7 @@ final class StatusBarController: NSObject {
     if #available(macOS 11.0, *),
        let symbol = NSImage(
         systemSymbolName: "eyedropper.full",
-        accessibilityDescription: "ClrPkr"
+        accessibilityDescription: "Pipetka"
        )?.withSymbolConfiguration(
         NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
        ) {
@@ -64,7 +64,7 @@ final class StatusBarController: NSObject {
 
     button.isHidden = false
     button.appearsDisabled = false
-    button.toolTip = "ClrPkr"
+    button.toolTip = "Pipetka"
     button.sizeToFit()
     statusItem?.isVisible = true
     statusItem?.length = button.image != nil && button.title.isEmpty
@@ -106,7 +106,7 @@ final class StatusBarController: NSObject {
 
     statusMenu.addItem(NSMenuItem.separator())
 
-    let aboutItem = NSMenuItem(title: "About ClrPkr", action: #selector(handleAbout), keyEquivalent: "")
+    let aboutItem = NSMenuItem(title: "About Pipetka", action: #selector(handleAbout), keyEquivalent: "")
     aboutItem.target = self
     statusMenu.addItem(aboutItem)
 

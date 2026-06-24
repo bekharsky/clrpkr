@@ -1,4 +1,4 @@
-# ClrPkr
+# Pipetka
 
 A native macOS color picker app with AI assistant integration.
 
@@ -17,7 +17,7 @@ A native macOS color picker app with AI assistant integration.
 
 ### MCP Server (AI Assistant)
 
-ClrPkr includes a Model Context Protocol (MCP) server that exposes color picking functionality to AI assistants like Claude and GitHub Copilot:
+Pipetka includes a Model Context Protocol (MCP) server that exposes color picking functionality to AI assistants like Claude and GitHub Copilot:
 
 - **`pick_color`** - Opens the interactive screen picker and returns hex, rgb, hsl values with visual swatch and color name
 - **`extract_palette`** - Opens file picker to extract dominant colors from images with swatches and names
@@ -34,9 +34,9 @@ The MCP server allows AI assistants to help you pick colors and extract palettes
 
 The project consists of three main components:
 
-- **Runner** - The native macOS app (AppKit + SwiftUI) with the main UI, history management, and screen picker
+- **Pipetka** - The native macOS app (AppKit + SwiftUI) with the main UI, history management, and screen picker
 - **MCPServer** - A Swift stdio-based MCP server that exposes color picking tools to AI assistants
-- **ClrPkrCore** - Shared Swift package containing core logic used by both Runner and MCPServer:
+- **PipetkaCore** - Shared Swift package containing core logic used by both Pipetka and MCPServer:
   - Color naming database and lookup
   - Screen color picker implementation
   - Image palette extraction
@@ -49,13 +49,13 @@ The project consists of three main components:
 Build the macOS app to `build/native/Release/`:
 
 ```bash
-xcodebuild -project Runner.xcodeproj -scheme Runner -configuration Release SYMROOT="$PWD/build/native" build
+xcodebuild -project Pipetka.xcodeproj -scheme Pipetka -configuration Release SYMROOT="$PWD/build/native" build
 ```
 
 Built app location:
 
 ```bash
-build/native/Release/clrpkr.app
+build/native/Release/Pipetka.app
 ```
 
 ### MCP Server
@@ -70,20 +70,20 @@ swift build -c release
 Built executable:
 
 ```bash
-MCPServer/.build/release/clrpkr-mcp
+MCPServer/.build/release/pipetka-mcp
 ```
 
-For detailed instructions on distributing and configuring the MCP server for different AI assistants, see [MCP_DISTRIBUTION.md](MCP_DISTRIBUTION.md).
+For detailed instructions on distributing and configuring the MCP server for different AI assistants, see [MCP.md](MCP.md).
 
 ## Test
 
 Run the unit test suite:
 
 ```bash
-xcodebuild -project Runner.xcodeproj -scheme Runner -destination 'platform=macOS' test
+xcodebuild -project Pipetka.xcodeproj -scheme Pipetka -destination 'platform=macOS' test
 ```
 
-Tests cover color formatting, export helpers, lens placement logic, image palette extraction, and `ClrPkrStore` behavior.
+Tests cover color formatting, export helpers, lens placement logic, image palette extraction, and `PipetkaStore` behavior.
 
 ## Notes
 

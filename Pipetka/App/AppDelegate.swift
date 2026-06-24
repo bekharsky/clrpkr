@@ -1,5 +1,5 @@
 import Cocoa
-import ClrPkrCore
+import PipetkaCore
 
 @main
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
@@ -227,7 +227,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
       backing: .buffered,
       defer: false
     )
-    window.title = "About ClrPkr"
+    window.title = "About Pipetka"
     window.isReleasedWhenClosed = false
     window.center()
 
@@ -240,7 +240,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     iconView.image = resolvedApplicationIcon()
     iconView.imageScaling = .scaleProportionallyUpOrDown
 
-    let appNameLabel = NSTextField(labelWithString: "ClrPkr")
+    let appNameLabel = NSTextField(labelWithString: "Pipetka")
     appNameLabel.font = NSFont.systemFont(ofSize: 20, weight: .semibold)
     appNameLabel.alignment = .center
 

@@ -1,5 +1,5 @@
 import Cocoa
-import ClrPkrCore
+import PipetkaCore
 
 enum ColorFormat: Int, CaseIterable {
   case hex

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HistorySection: View {
-  @ObservedObject var store: ClrPkrStore
+  @ObservedObject var store: PipetkaStore
   let onCopyText: (String) -> Void
 
   var body: some View {

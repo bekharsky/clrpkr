@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 struct MainWindowRootView: View {
-  @ObservedObject var store: ClrPkrStore
+  @ObservedObject var store: PipetkaStore
   @State private var isDropTargeted = false
 
   var body: some View {

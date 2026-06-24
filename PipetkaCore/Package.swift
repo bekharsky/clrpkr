@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-  name: "ClrPkrCore",
+  name: "PipetkaCore",
   platforms: [.macOS(.v13)],
   products: [
-    .library(name: "ClrPkrCore", targets: ["ClrPkrCore"])
+    .library(name: "PipetkaCore", targets: ["PipetkaCore"])
   ],
   targets: [
-    .target(name: "ClrPkrCore", dependencies: [])
+    .target(name: "PipetkaCore", dependencies: [])
   ]
 )

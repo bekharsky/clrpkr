@@ -23,7 +23,7 @@ cd MCPServer
 swift build -c release
 ```
 
-The executable will be at `MCPServer/.build/release/clrpkr-mcp`.
+The executable will be at `MCPServer/.build/release/pipetka-mcp`.
 
 ## Configuration
 
@@ -34,9 +34,9 @@ The executable will be at `MCPServer/.build/release/clrpkr-mcp`.
 ```json
 {
   "servers": {
-    "clrpkr": {
+    "pipetka": {
       "type": "stdio",
-      "command": "/Users/username/bin/clrpkr-mcp"
+      "command": "/Users/username/bin/pipetka-mcp"
     }
   }
 }
@@ -47,9 +47,9 @@ Or if installed via Homebrew:
 ```json
 {
   "servers": {
-    "clrpkr": {
+    "pipetka": {
       "type": "stdio",
-      "command": "/opt/homebrew/bin/clrpkr-mcp"
+      "command": "/opt/homebrew/bin/pipetka-mcp"
     }
   }
 }
@@ -62,8 +62,8 @@ Or if installed via Homebrew:
 ```json
 {
   "mcpServers": {
-    "clrpkr": {
-      "command": "/Users/username/bin/clrpkr-mcp"
+    "pipetka": {
+      "command": "/Users/username/bin/pipetka-mcp"
     }
   }
 }
@@ -76,8 +76,8 @@ Or if installed via Homebrew:
 ```json
 {
   "mcpServers": {
-    "clrpkr": {
-      "command": "/Users/username/bin/clrpkr-mcp",
+    "pipetka": {
+      "command": "/Users/username/bin/pipetka-mcp",
       "args": []
     }
   }
@@ -91,8 +91,8 @@ Or if installed via Homebrew:
 ```json
 {
   "mcpServers": {
-    "clrpkr": {
-      "command": "/Users/username/bin/clrpkr-mcp"
+    "pipetka": {
+      "command": "/Users/username/bin/pipetka-mcp"
     }
   }
 }
@@ -104,7 +104,7 @@ Any MCP client that supports stdio transport:
 
 ```json
 {
-  "command": "/path/to/clrpkr-mcp",
+  "command": "/path/to/pipetka-mcp",
   "type": "stdio"
 }
 ```
