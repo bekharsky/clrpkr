@@ -3,15 +3,15 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		331C80D8294CF71000263BE5 /* PipetkaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* PipetkaTests.swift */; };
-		33A1F0D52C00000600000001 /* PipetkaStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0D32C00000600000001 /* PipetkaStoreTests.swift */; };
 		33A1F0C02C00000300000001 /* ColorModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0B42C00000300000001 /* ColorModels.swift */; };
 		33A1F0D02C00000500000001 /* PipetkaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0CD2C00000500000001 /* PipetkaStore.swift */; };
 		33A1F0D12C00000500000001 /* MainWindowRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0CE2C00000500000001 /* MainWindowRootView.swift */; };
+		33A1F0D52C00000600000001 /* PipetkaStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0D32C00000600000001 /* PipetkaStoreTests.swift */; };
 		33A1F0E02C00000700000001 /* ImportedPaletteSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0DB2C00000700000001 /* ImportedPaletteSection.swift */; };
 		33A1F0E12C00000700000001 /* HistorySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0DC2C00000700000001 /* HistorySection.swift */; };
 		33A1F0E22C00000700000001 /* InteractiveControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A1F0DD2C00000700000001 /* InteractiveControls.swift */; };
@@ -21,6 +21,8 @@
 		33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F22044A3C60003C045 /* Assets.xcassets */; };
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainWindow.swift */; };
+		C4FD5B682FEDBF1800C102E6 /* PipetkaCore in Frameworks */ = {isa = PBXBuildFile; productRef = 33PIPETKA2C00000800000002 /* PipetkaCore */; };
+		C4FD5B692FEDBF1800C102E6 /* PipetkaCore in Frameworks */ = {isa = PBXBuildFile; productRef = 33PIPETKA2C00000800000002 /* PipetkaCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,11 +51,11 @@
 /* Begin PBXFileReference section */
 		331C80D5294CF71000263BE5 /* PipetkaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PipetkaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C80D7294CF71000263BE5 /* PipetkaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipetkaTests.swift; sourceTree = "<group>"; };
-		33A1F0D32C00000600000001 /* PipetkaStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipetkaStoreTests.swift; sourceTree = "<group>"; };
 		333000ED22D3DE5D00554162 /* Warnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Warnings.xcconfig; sourceTree = "<group>"; };
 		33A1F0B42C00000300000001 /* ColorModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorModels.swift; sourceTree = "<group>"; };
 		33A1F0CD2C00000500000001 /* PipetkaStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipetkaStore.swift; sourceTree = "<group>"; };
 		33A1F0CE2C00000500000001 /* MainWindowRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowRootView.swift; sourceTree = "<group>"; };
+		33A1F0D32C00000600000001 /* PipetkaStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipetkaStoreTests.swift; sourceTree = "<group>"; };
 		33A1F0DB2C00000700000001 /* ImportedPaletteSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportedPaletteSection.swift; sourceTree = "<group>"; };
 		33A1F0DC2C00000700000001 /* HistorySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistorySection.swift; sourceTree = "<group>"; };
 		33A1F0DD2C00000700000001 /* InteractiveControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveControls.swift; sourceTree = "<group>"; };
@@ -77,6 +79,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C4FD5B692FEDBF1800C102E6 /* PipetkaCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +87,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C4FD5B682FEDBF1800C102E6 /* PipetkaCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -266,7 +270,7 @@
 			);
 			mainGroup = 33CC10E42044A3C60003C045;
 			packageReferences = (
-				33PIPETKA2C00000800000001 /* XCLocalSwiftPackageReference "../PipetkaCore" */,
+				33PIPETKA2C00000800000001 /* XCLocalSwiftPackageReference "PipetkaCore" */,
 			);
 			productRefGroup = 33CC10EE2044A3C60003C045 /* Products */;
 			projectDirPath = "";
@@ -443,26 +447,20 @@
 			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Pipetka/DebugProfile.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = YES;
 				INFOPLIST_FILE = Pipetka/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
-			};
-			name = Profile;
-		};
-		338D0CEB231458BD00FA5F75 /* Profile */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Manual;
-				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Profile;
 		};
@@ -576,12 +574,14 @@
 			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Pipetka/DebugProfile.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = YES;
 				INFOPLIST_FILE = Pipetka/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -597,12 +597,14 @@
 			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Pipetka/Release.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = YES;
 				INFOPLIST_FILE = Pipetka/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -613,21 +615,6 @@
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
-
-/* Begin XCLocalSwiftPackageReference section */
-		33PIPETKA2C00000800000001 /* XCLocalSwiftPackageReference "../PipetkaCore" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = PipetkaCore;
-		};
-/* End XCLocalSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		33PIPETKA2C00000800000002 /* PipetkaCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = PipetkaCore;
-			package = 33PIPETKA2C00000800000001 /* XCLocalSwiftPackageReference "../PipetkaCore" */;
-		};
-/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCConfigurationList section */
 		331C80DE294CF71000263BE5 /* Build configuration list for PBXNativeTarget "PipetkaTests" */ = {
@@ -661,6 +648,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		33PIPETKA2C00000800000001 /* XCLocalSwiftPackageReference "PipetkaCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = PipetkaCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		33PIPETKA2C00000800000002 /* PipetkaCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 33PIPETKA2C00000800000001 /* XCLocalSwiftPackageReference "PipetkaCore" */;
+			productName = PipetkaCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 33CC10E52044A3C60003C045 /* Project object */;
 }
