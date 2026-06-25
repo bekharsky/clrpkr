@@ -452,6 +452,7 @@
 				CODE_SIGN_ENTITLEMENTS = Pipetka/DebugProfile.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = DSP3NSS4L8;
 				ENABLE_APP_SANDBOX = YES;
 				INFOPLIST_FILE = Pipetka/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -579,6 +580,7 @@
 				CODE_SIGN_ENTITLEMENTS = Pipetka/DebugProfile.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = DSP3NSS4L8;
 				ENABLE_APP_SANDBOX = YES;
 				INFOPLIST_FILE = Pipetka/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -602,6 +604,7 @@
 				CODE_SIGN_ENTITLEMENTS = Pipetka/Release.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = DSP3NSS4L8;
 				ENABLE_APP_SANDBOX = YES;
 				INFOPLIST_FILE = Pipetka/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
