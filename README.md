@@ -58,6 +58,14 @@ Built app location:
 build/native/Release/Pipetka.app
 ```
 
+Update the App Store marketing version:
+
+```bash
+./bump-version.sh --patch
+```
+
+Xcode Cloud uses `ci_scripts/ci_post_clone.sh` to write `CI_BUILD_NUMBER` into `CURRENT_PROJECT_VERSION`, so the bundle version appears in the About window as `Version x.y.z (build)`.
+
 ### MCP Server
 
 Build the MCP server executable:
