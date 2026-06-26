@@ -106,6 +106,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
       quitItem.target = self
     }
 
+    NSApp.mainMenu?.items.removeAll { $0.title == "Edit" }
     configureToolsMenu()
   }
 
@@ -182,19 +183,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   }
 
   @objc
-  private func copyLatestColorAs(_ sender: NSMenuItem) {
-    guard
-      let rawValue = sender.representedObject as? Int,
-      let format = ColorFormat(rawValue: rawValue),
-      let item = mainWindow?.store.history.first
-    else {
-      return
-    }
-
-    copyText(formatColor(item, format: format))
-  }
-
-  @objc
   private func copyHistoryAs(_ sender: NSMenuItem) {
     guard
       let rawValue = sender.representedObject as? Int,
@@ -208,17 +196,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     copyText(exportColors(history, format: format))
   }
 
-  @objc
-  private func enableScreenAccessFromMenu(_ sender: Any?) {
-    _ = ensureScreenCaptureAccess()
-  }
-
   func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
     switch menuItem.action {
     case #selector(toggleAlwaysOnTopFromToolbar(_:)):
       menuItem.state = isMainWindowAlwaysOnTop ? .on : .off
       return true
-    case #selector(copyLatestColorAs(_:)), #selector(copyHistoryAs(_:)):
+    case #selector(copyHistoryAs(_:)):
       return !(mainWindow?.store.history.isEmpty ?? true)
     default:
       return true
@@ -404,13 +387,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     pickItem.target = self
     toolsMenu.addItem(pickItem)
 
-    let screenAccessItem = NSMenuItem(
-      title: "Enable Screen Access...",
-      action: #selector(enableScreenAccessFromMenu(_:)),
-      keyEquivalent: ""
+    let importItem = NSMenuItem(
+      title: "Import...",
+      action: #selector(importImagesFromToolbar(_:)),
+      keyEquivalent: "i"
     )
-    screenAccessItem.target = self
-    toolsMenu.addItem(screenAccessItem)
+    importItem.keyEquivalentModifierMask = [.command]
+    importItem.target = self
+    toolsMenu.addItem(importItem)
 
     let alwaysOnTopItem = NSMenuItem(
       title: "Always on Top",
@@ -423,21 +407,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     toolsMenu.addItem(alwaysOnTopItem)
 
     toolsMenu.addItem(NSMenuItem.separator())
-
-    let copyAsItem = NSMenuItem(title: "Copy As", action: nil, keyEquivalent: "")
-    let copyAsMenu = NSMenu(title: "Copy As")
-    for format in ColorFormat.allCases {
-      let item = NSMenuItem(
-        title: format.label,
-        action: #selector(copyLatestColorAs(_:)),
-        keyEquivalent: ""
-      )
-      item.target = self
-      item.representedObject = format.rawValue
-      copyAsMenu.addItem(item)
-    }
-    copyAsItem.submenu = copyAsMenu
-    toolsMenu.addItem(copyAsItem)
 
     let copyHistoryItem = NSMenuItem(title: "Copy History As", action: nil, keyEquivalent: "")
     let copyHistoryMenu = NSMenu(title: "Copy History As")
