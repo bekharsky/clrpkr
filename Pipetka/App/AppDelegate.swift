@@ -2,13 +2,14 @@ import Cocoa
 import PipetkaCore
 
 @main
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation {
   @IBOutlet weak var applicationMenu: NSMenu!
   @IBOutlet weak var mainWindow: MainWindow!
 
   private var isMainWindowAlwaysOnTop = false
   private var hasRequestedScreenCaptureAccessThisLaunch = false
   private var aboutWindowController: NSWindowController?
+  private weak var alwaysOnTopMenuItem: NSMenuItem?
   private lazy var screenColorPicker = ScreenColorPicker(
     hideWindow: { [weak self] in
       self?.hideMainWindow()
@@ -83,41 +84,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   }
 
   private func configureApplicationMenu() {
-    let aboutIndex = applicationMenu.items.firstIndex { $0.title.contains("About") } ?? 0
+    let appName = resolvedApplicationName()
+    replaceAppNamePlaceholders(in: NSApp.mainMenu, with: appName)
 
-    let pickItem = NSMenuItem(
-      title: "Pick Color",
-      action: #selector(startPickerFromToolbar(_:)),
-      keyEquivalent: "p"
-    )
-    pickItem.keyEquivalentModifierMask = [.command]
-    pickItem.target = self
-
-    let hideWindowItem = NSMenuItem(
-      title: "Hide Window",
-      action: #selector(hideWindowCommand(_:)),
-      keyEquivalent: "w"
-    )
-    hideWindowItem.keyEquivalentModifierMask = [.command]
-    hideWindowItem.target = self
-
-    applicationMenu.insertItem(pickItem, at: aboutIndex + 1)
-    applicationMenu.insertItem(NSMenuItem.separator(), at: aboutIndex + 2)
+    if let appMenuItem = NSApp.mainMenu?.items.first {
+      appMenuItem.title = appName
+      appMenuItem.submenu?.title = appName
+    }
 
     if let hideIndex = applicationMenu.items.firstIndex(where: { $0.keyEquivalent == "h" }) {
       let hideItem = applicationMenu.items[hideIndex]
-      hideItem.title = "Hide Window"
-      hideItem.action = #selector(hideWindowCommand(_:))
-      hideItem.target = self
+      hideItem.title = "Hide \(appName)"
+      hideItem.action = #selector(NSApplication.hide(_:))
+      hideItem.target = NSApp
     }
 
     if let quitIndex = applicationMenu.items.firstIndex(where: { $0.keyEquivalent == "q" }) {
       let quitItem = applicationMenu.items[quitIndex]
+      quitItem.title = "Quit \(appName)"
       quitItem.action = #selector(quitApp(_:))
       quitItem.target = self
     }
 
-    applicationMenu.insertItem(hideWindowItem, at: max(aboutIndex + 3, applicationMenu.numberOfItems - 2))
+    configureToolsMenu()
   }
 
   @objc
@@ -141,7 +130,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   @objc
   func startPickerFromToolbar(_ sender: Any?) {
-    requestScreenCaptureAccessIfNeeded()
+    guard ensureScreenCaptureAccess() else {
+      return
+    }
+
     screenColorPicker.start()
   }
 
@@ -185,7 +177,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     isMainWindowAlwaysOnTop.toggle()
     mainWindow?.store.setAlwaysOnTop(isMainWindowAlwaysOnTop)
     mainWindow?.syncToolbarState()
+    alwaysOnTopMenuItem?.state = isMainWindowAlwaysOnTop ? .on : .off
     applyMainWindowLevel()
+  }
+
+  @objc
+  private func copyLatestColorAs(_ sender: NSMenuItem) {
+    guard
+      let rawValue = sender.representedObject as? Int,
+      let format = ColorFormat(rawValue: rawValue),
+      let item = mainWindow?.store.history.first
+    else {
+      return
+    }
+
+    copyText(formatColor(item, format: format))
+  }
+
+  @objc
+  private func copyHistoryAs(_ sender: NSMenuItem) {
+    guard
+      let rawValue = sender.representedObject as? Int,
+      let format = PaletteExportFormat(rawValue: rawValue),
+      let history = mainWindow?.store.history,
+      !history.isEmpty
+    else {
+      return
+    }
+
+    copyText(exportColors(history, format: format))
+  }
+
+  @objc
+  private func enableScreenAccessFromMenu(_ sender: Any?) {
+    _ = ensureScreenCaptureAccess()
+  }
+
+  func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+    switch menuItem.action {
+    case #selector(toggleAlwaysOnTopFromToolbar(_:)):
+      menuItem.state = isMainWindowAlwaysOnTop ? .on : .off
+      return true
+    case #selector(copyLatestColorAs(_:)), #selector(copyHistoryAs(_:)):
+      return !(mainWindow?.store.history.isEmpty ?? true)
+    default:
+      return true
+    }
   }
 
   private func handlePickedColor(_ payload: PickedColorPayload) {
@@ -349,23 +386,148 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     statusBarController.install()
   }
 
-  private func requestScreenCaptureAccessIfNeeded() {
-    guard !hasRequestedScreenCaptureAccessThisLaunch else {
+  private func configureToolsMenu() {
+    guard let mainMenu = NSApp.mainMenu else {
       return
+    }
+
+    mainMenu.items.removeAll { $0.title == "Tools" }
+
+    let toolsMenu = NSMenu(title: "Tools")
+
+    let pickItem = NSMenuItem(
+      title: "Pick Color",
+      action: #selector(startPickerFromToolbar(_:)),
+      keyEquivalent: "p"
+    )
+    pickItem.keyEquivalentModifierMask = [.command]
+    pickItem.target = self
+    toolsMenu.addItem(pickItem)
+
+    let screenAccessItem = NSMenuItem(
+      title: "Enable Screen Access...",
+      action: #selector(enableScreenAccessFromMenu(_:)),
+      keyEquivalent: ""
+    )
+    screenAccessItem.target = self
+    toolsMenu.addItem(screenAccessItem)
+
+    let alwaysOnTopItem = NSMenuItem(
+      title: "Always on Top",
+      action: #selector(toggleAlwaysOnTopFromToolbar(_:)),
+      keyEquivalent: ""
+    )
+    alwaysOnTopItem.target = self
+    alwaysOnTopItem.state = isMainWindowAlwaysOnTop ? .on : .off
+    alwaysOnTopMenuItem = alwaysOnTopItem
+    toolsMenu.addItem(alwaysOnTopItem)
+
+    toolsMenu.addItem(NSMenuItem.separator())
+
+    let copyAsItem = NSMenuItem(title: "Copy As", action: nil, keyEquivalent: "")
+    let copyAsMenu = NSMenu(title: "Copy As")
+    for format in ColorFormat.allCases {
+      let item = NSMenuItem(
+        title: format.label,
+        action: #selector(copyLatestColorAs(_:)),
+        keyEquivalent: ""
+      )
+      item.target = self
+      item.representedObject = format.rawValue
+      copyAsMenu.addItem(item)
+    }
+    copyAsItem.submenu = copyAsMenu
+    toolsMenu.addItem(copyAsItem)
+
+    let copyHistoryItem = NSMenuItem(title: "Copy History As", action: nil, keyEquivalent: "")
+    let copyHistoryMenu = NSMenu(title: "Copy History As")
+    for format in PaletteExportFormat.allCases {
+      let item = NSMenuItem(
+        title: format.label,
+        action: #selector(copyHistoryAs(_:)),
+        keyEquivalent: ""
+      )
+      item.target = self
+      item.representedObject = format.rawValue
+      copyHistoryMenu.addItem(item)
+    }
+    copyHistoryItem.submenu = copyHistoryMenu
+    toolsMenu.addItem(copyHistoryItem)
+
+    let toolsMenuItem = NSMenuItem(title: "Tools", action: nil, keyEquivalent: "")
+    toolsMenuItem.submenu = toolsMenu
+    mainMenu.insertItem(toolsMenuItem, at: min(1, mainMenu.numberOfItems))
+  }
+
+  private func replaceAppNamePlaceholders(in menu: NSMenu?, with appName: String) {
+    guard let menu else {
+      return
+    }
+
+    menu.title = menu.title.replacingOccurrences(of: "APP_NAME", with: appName)
+
+    for item in menu.items {
+      item.title = item.title.replacingOccurrences(of: "APP_NAME", with: appName)
+      replaceAppNamePlaceholders(in: item.submenu, with: appName)
+    }
+  }
+
+  private func resolvedApplicationName() -> String {
+    (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String)?
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .nonEmpty ?? "Pipetka"
+  }
+
+  private func ensureScreenCaptureAccess() -> Bool {
+    guard #available(macOS 10.15, *) else {
+      return true
+    }
+
+    if CGPreflightScreenCaptureAccess() {
+      return true
+    }
+
+    guard !hasRequestedScreenCaptureAccessThisLaunch else {
+      showScreenAccessSettingsAlert()
+      return false
+    }
+
+    let response = showScreenAccessExplanationAlert()
+    guard response == .alertFirstButtonReturn else {
+      return false
     }
 
     hasRequestedScreenCaptureAccessThisLaunch = true
-
-    guard #available(macOS 10.15, *) else {
-      return
-    }
-
-    guard !CGPreflightScreenCaptureAccess() else {
-      return
-    }
-
     NSApp.activate(ignoringOtherApps: true)
-    _ = CGRequestScreenCaptureAccess()
+    return CGRequestScreenCaptureAccess()
+  }
+
+  @available(macOS 10.15, *)
+  private func showScreenAccessExplanationAlert() -> NSApplication.ModalResponse {
+    let alert = NSAlert()
+    alert.messageText = "Pipetka needs screen access to pick colors"
+    alert.informativeText = """
+macOS may describe this as access to your screen and audio. Pipetka only samples pixels under the cursor and does not use audio.
+"""
+    alert.alertStyle = .informational
+    alert.addButton(withTitle: "Continue")
+    alert.addButton(withTitle: "Cancel")
+    return alert.runModal()
+  }
+
+  @available(macOS 10.15, *)
+  private func showScreenAccessSettingsAlert() {
+    let alert = NSAlert()
+    alert.messageText = "Screen access is not enabled"
+    alert.informativeText = "Open System Settings and allow Pipetka to access the screen, then try Pick Color again."
+    alert.alertStyle = .warning
+    alert.addButton(withTitle: "Open System Settings")
+    alert.addButton(withTitle: "Cancel")
+
+    if alert.runModal() == .alertFirstButtonReturn,
+       let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+      NSWorkspace.shared.open(url)
+    }
   }
 }
 
