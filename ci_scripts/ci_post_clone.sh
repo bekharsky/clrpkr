@@ -26,8 +26,25 @@ case "$CI_BUILD_NUMBER" in
 		;;
 esac
 
+configured_build_number=$(sed -n -E 's/^[[:space:]]*CURRENT_PROJECT_VERSION[[:space:]]*=[[:space:]]*([0-9]+)[[:space:]]*$/\1/p' "$CONFIG_FILE" | head -n 1)
+if [ -n "$configured_build_number" ]; then
+	case "$configured_build_number" in
+		*[!0-9]*)
+			echo "[ci_post_clone] ERROR: CURRENT_PROJECT_VERSION must be numeric, got '$configured_build_number'"
+			exit 1
+			;;
+	esac
+else
+	configured_build_number=0
+fi
+
+build_number="$CI_BUILD_NUMBER"
+if [ "$configured_build_number" -gt "$build_number" ]; then
+	build_number="$configured_build_number"
+fi
+
 tmp_file="$CONFIG_FILE.tmp"
-awk -v build_number="$CI_BUILD_NUMBER" '
+awk -v build_number="$build_number" '
 BEGIN { updated = 0 }
 /^[[:space:]]*CURRENT_PROJECT_VERSION[[:space:]]*=/ {
 	print "CURRENT_PROJECT_VERSION = " build_number
@@ -44,4 +61,4 @@ END {
 mv "$tmp_file" "$CONFIG_FILE"
 
 version=$(sed -n -E 's/^[[:space:]]*MARKETING_VERSION[[:space:]]*=[[:space:]]*(.*)$/\1/p' "$CONFIG_FILE" | head -n 1)
-echo "[ci_post_clone] Version ${version:-unknown}, build ${CI_BUILD_NUMBER}"
+echo "[ci_post_clone] Version ${version:-unknown}, build $build_number (CI_BUILD_NUMBER=$CI_BUILD_NUMBER, minimum=$configured_build_number)"

@@ -215,6 +215,39 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
     item.image = toolbarImage(systemName: symbolName, tintColor: tintColor)
     item.visibilityPriority = .high
 
+    if #available(macOS 26.0, *) {
+      item.target = self
+      item.action = action
+
+      if identifier == ToolbarIdentifier.onTop {
+        pinToolbarItem = item
+      }
+
+      return item
+    }
+
+    let container = makeToolbarControl(
+      label: label,
+      symbolName: symbolName,
+      action: action,
+      tintColor: tintColor
+    )
+
+    item.view = container
+
+    if identifier == ToolbarIdentifier.onTop {
+      pinToolbarItem = item
+    }
+
+    return item
+  }
+
+  private func makeToolbarControl(
+    label: String,
+    symbolName: String,
+    action: Selector,
+    tintColor: NSColor? = nil
+  ) -> ToolbarHitAreaView {
     let button = NSButton(image: toolbarImage(systemName: symbolName, tintColor: tintColor) ?? NSImage(), target: self, action: action)
     button.bezelStyle = .texturedRounded
     button.controlSize = .regular
@@ -252,14 +285,11 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
       button.heightAnchor.constraint(equalToConstant: 32)
     ])
 
-    item.view = container
-
-    if identifier == ToolbarIdentifier.onTop {
-      pinToolbarItem = item
+    if label == "On Top" {
       pinToolbarButton = button
     }
 
-    return item
+    return container
   }
 
   func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
