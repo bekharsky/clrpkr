@@ -1,3 +1,4 @@
+import ApplicationServices
 import Cocoa
 import PipetkaCore
 
@@ -45,6 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     refreshStatusBar()
     DispatchQueue.main.async { [weak self] in
       self?.showMainWindow()
+      self?.requestRequiredPermissionsOnLaunch()
     }
   }
 
@@ -369,6 +371,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     statusBarController.install()
   }
 
+  private func requestRequiredPermissionsOnLaunch() {
+    requestScreenCaptureAccessOnLaunch()
+    requestAccessibilityAccessOnLaunch()
+  }
+
+  private func requestScreenCaptureAccessOnLaunch() {
+    guard #available(macOS 10.15, *) else {
+      return
+    }
+
+    guard !CGPreflightScreenCaptureAccess() else {
+      return
+    }
+
+    hasRequestedScreenCaptureAccessThisLaunch = true
+    NSApp.activate(ignoringOtherApps: true)
+    _ = CGRequestScreenCaptureAccess()
+  }
+
+  private func requestAccessibilityAccessOnLaunch() {
+    guard !AXIsProcessTrusted() else {
+      return
+    }
+
+    let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+    AXIsProcessTrustedWithOptions(options as CFDictionary)
+  }
+
   private func configureToolsMenu() {
     guard let mainMenu = NSApp.mainMenu else {
       return
@@ -461,11 +491,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
       return false
     }
 
-    let response = showScreenAccessExplanationAlert()
-    guard response == .alertFirstButtonReturn else {
-      return false
-    }
-
     hasRequestedScreenCaptureAccessThisLaunch = true
     NSApp.activate(ignoringOtherApps: true)
     _ = CGRequestScreenCaptureAccess()
@@ -476,19 +501,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
     showScreenAccessSettingsAlert()
     return false
-  }
-
-  @available(macOS 10.15, *)
-  private func showScreenAccessExplanationAlert() -> NSApplication.ModalResponse {
-    let alert = NSAlert()
-    alert.messageText = "Pipetka needs screen access to pick colors"
-    alert.informativeText = """
-macOS may describe this as access to your screen and audio. Pipetka only samples pixels under the cursor and does not use audio.
-"""
-    alert.alertStyle = .informational
-    alert.addButton(withTitle: "Continue")
-    alert.addButton(withTitle: "Cancel")
-    return alert.runModal()
   }
 
   @available(macOS 10.15, *)
