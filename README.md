@@ -64,7 +64,7 @@ Update the App Store marketing version:
 ./bump-version.sh --patch
 ```
 
-Xcode Cloud uses `ci_scripts/ci_post_clone.sh` to write `CI_BUILD_NUMBER` into `CURRENT_PROJECT_VERSION`, so the bundle version appears in the About window as `Version x.y.z (build)`.
+Xcode Cloud uses `ci_scripts/ci_post_clone.sh` to write `CI_BUILD_NUMBER` into `CURRENT_PROJECT_VERSION`, so the cloud build number is the release source of truth. The local value in `Pipetka/Configs/AppInfo.xcconfig` is only a fallback for local builds.
 
 ### MCP Server
 
