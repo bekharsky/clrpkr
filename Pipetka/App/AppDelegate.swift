@@ -462,6 +462,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     importItem.target = self
     toolsMenu.addItem(importItem)
 
+    let closeWindowItem = NSMenuItem(
+      title: "Close Window",
+      action: #selector(hideWindowCommand(_:)),
+      keyEquivalent: "w"
+    )
+    closeWindowItem.keyEquivalentModifierMask = [.command]
+    closeWindowItem.target = self
+    toolsMenu.addItem(closeWindowItem)
+
     let alwaysOnTopItem = NSMenuItem(
       title: "Always on Top",
       action: #selector(toggleAlwaysOnTopFromToolbar(_:)),
