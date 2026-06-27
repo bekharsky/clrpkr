@@ -456,35 +456,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     } else {
       needsScreenCaptureAccess = false
     }
-    let needsAccessibilityAccess = !AXIsProcessTrusted()
-
-    guard needsScreenCaptureAccess || needsAccessibilityAccess else {
+    guard needsScreenCaptureAccess else {
       return
     }
 
-    showRequiredPermissionsExplanationAlert(
-      needsScreenCaptureAccess: needsScreenCaptureAccess,
-      needsAccessibilityAccess: needsAccessibilityAccess
-    )
+    showRequiredPermissionsExplanationAlert()
     requestScreenCaptureAccessOnLaunch()
-    requestAccessibilityAccessOnLaunch()
   }
 
-  private func showRequiredPermissionsExplanationAlert(
-    needsScreenCaptureAccess: Bool,
-    needsAccessibilityAccess: Bool
-  ) {
-    var permissions: [String] = []
-    if needsScreenCaptureAccess {
-      permissions.append("Screen Recording lets Pipetka sample pixels under your cursor.")
-    }
-    if needsAccessibilityAccess {
-      permissions.append("Accessibility lets Pipetka hide and restore app windows while picking colors.")
-    }
-
+  private func showRequiredPermissionsExplanationAlert() {
     let alert = NSAlert()
     alert.messageText = "Pipetka needs macOS permissions"
-    alert.informativeText = permissions.joined(separator: "\n\n")
+    alert.informativeText = "Screen Recording lets Pipetka sample pixels under your cursor."
     alert.alertStyle = .informational
     alert.addButton(withTitle: "Continue")
     alert.runModal()
@@ -502,15 +485,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     hasRequestedScreenCaptureAccessThisLaunch = true
     NSApp.activate(ignoringOtherApps: true)
     _ = CGRequestScreenCaptureAccess()
-  }
-
-  private func requestAccessibilityAccessOnLaunch() {
-    guard !AXIsProcessTrusted() else {
-      return
-    }
-
-    let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-    AXIsProcessTrustedWithOptions(options as CFDictionary)
   }
 
   private func configureToolsMenu() {
