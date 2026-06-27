@@ -468,7 +468,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
     hasRequestedScreenCaptureAccessThisLaunch = true
     NSApp.activate(ignoringOtherApps: true)
-    return CGRequestScreenCaptureAccess()
+    _ = CGRequestScreenCaptureAccess()
+
+    if CGPreflightScreenCaptureAccess() {
+      return true
+    }
+
+    showScreenAccessSettingsAlert()
+    return false
   }
 
   @available(macOS 10.15, *)
@@ -486,17 +493,33 @@ macOS may describe this as access to your screen and audio. Pipetka only samples
 
   @available(macOS 10.15, *)
   private func showScreenAccessSettingsAlert() {
+    showMainWindow()
+
     let alert = NSAlert()
     alert.messageText = "Screen access is not enabled"
-    alert.informativeText = "Open System Settings and allow Pipetka to access the screen, then try Pick Color again."
+    alert.informativeText = "Allow Pipetka in System Settings, then quit and reopen the app before picking a screen color."
     alert.alertStyle = .warning
     alert.addButton(withTitle: "Open System Settings")
-    alert.addButton(withTitle: "Cancel")
+    alert.addButton(withTitle: "Quit Pipetka")
+    alert.addButton(withTitle: "Not Now")
 
-    if alert.runModal() == .alertFirstButtonReturn,
-       let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-      NSWorkspace.shared.open(url)
+    switch alert.runModal() {
+    case .alertFirstButtonReturn:
+      openScreenAccessSettings()
+    case .alertSecondButtonReturn:
+      NSApp.terminate(nil)
+    default:
+      break
     }
+  }
+
+  @available(macOS 10.15, *)
+  private func openScreenAccessSettings() {
+    guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") else {
+      return
+    }
+
+    NSWorkspace.shared.open(url)
   }
 }
 
