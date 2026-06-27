@@ -3,6 +3,7 @@ import Cocoa
 final class StatusBarController: NSObject {
   private let onPick: () -> Void
   private let onShow: () -> Void
+  private let onShowWindowAfterPickChange: (Bool) -> Void
   private let onAbout: () -> Void
   private let onQuit: () -> Void
   private let onCopy: (String) -> Void
@@ -10,17 +11,22 @@ final class StatusBarController: NSObject {
   private var statusItem: NSStatusItem?
   private let statusMenu = NSMenu()
   private var recentPickItems: [RecentPickMenuItem] = []
+  private var showsWindowAfterPick: Bool
   private var isInstalled = false
 
   init(
     onPick: @escaping () -> Void,
     onShow: @escaping () -> Void,
+    showsWindowAfterPick: Bool,
+    onShowWindowAfterPickChange: @escaping (Bool) -> Void,
     onAbout: @escaping () -> Void,
     onQuit: @escaping () -> Void,
     onCopy: @escaping (String) -> Void
   ) {
     self.onPick = onPick
     self.onShow = onShow
+    self.showsWindowAfterPick = showsWindowAfterPick
+    self.onShowWindowAfterPickChange = onShowWindowAfterPickChange
     self.onAbout = onAbout
     self.onQuit = onQuit
     self.onCopy = onCopy
@@ -79,6 +85,11 @@ final class StatusBarController: NSObject {
     rebuildMenu()
   }
 
+  func setShowsWindowAfterPick(_ value: Bool) {
+    showsWindowAfterPick = value
+    rebuildMenu()
+  }
+
   private func rebuildMenu() {
     statusMenu.removeAllItems()
 
@@ -86,8 +97,16 @@ final class StatusBarController: NSObject {
     showItem.target = self
     let pickItem = NSMenuItem(title: "Pick Color", action: #selector(handlePick), keyEquivalent: "")
     pickItem.target = self
+    let showAfterPickItem = NSMenuItem(
+      title: "Show Window After Pick",
+      action: #selector(handleShowWindowAfterPickToggle),
+      keyEquivalent: ""
+    )
+    showAfterPickItem.target = self
+    showAfterPickItem.state = showsWindowAfterPick ? .on : .off
     statusMenu.addItem(showItem)
     statusMenu.addItem(pickItem)
+    statusMenu.addItem(showAfterPickItem)
     statusMenu.addItem(NSMenuItem.separator())
 
     if recentPickItems.isEmpty {
@@ -123,6 +142,13 @@ final class StatusBarController: NSObject {
   @objc
   private func handleShow() {
     onShow()
+  }
+
+  @objc
+  private func handleShowWindowAfterPickToggle() {
+    showsWindowAfterPick.toggle()
+    onShowWindowAfterPickChange(showsWindowAfterPick)
+    rebuildMenu()
   }
 
   @objc

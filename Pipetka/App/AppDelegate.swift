@@ -4,19 +4,34 @@ import PipetkaCore
 
 @main
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation {
+  private enum PickerInvocationSource {
+    case mainWindow
+    case statusBar
+  }
+
   @IBOutlet weak var applicationMenu: NSMenu!
   @IBOutlet weak var mainWindow: MainWindow!
 
+  private static let showWindowAfterStatusBarPickKey = "ShowWindowAfterStatusBarPick"
+
   private var isMainWindowAlwaysOnTop = false
   private var hasRequestedScreenCaptureAccessThisLaunch = false
+  private var pickerInvocationSource: PickerInvocationSource = .mainWindow
+  private var shouldRestoreMainWindowAfterStatusBarPick = false
+  private var isRunningUnitTests: Bool {
+    ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+  }
+  private var showsWindowAfterStatusBarPick = UserDefaults.standard.bool(
+    forKey: AppDelegate.showWindowAfterStatusBarPickKey
+  )
   private var aboutWindowController: NSWindowController?
   private weak var alwaysOnTopMenuItem: NSMenuItem?
   private lazy var screenColorPicker = ScreenColorPicker(
     hideWindow: { [weak self] in
-      self?.hideMainWindow()
+      self?.handlePickerWindowHide()
     },
     showWindow: { [weak self] in
-      self?.showMainWindow()
+      self?.handlePickerWindowRestore()
     },
     onPick: { [weak self] payload in
       self?.handlePickedColor(payload)
@@ -24,10 +39,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   )
   private lazy var statusBarController = StatusBarController(
     onPick: { [weak self] in
-      self?.startPickerFromToolbar(nil)
+      self?.startPicker(from: .statusBar)
     },
     onShow: { [weak self] in
       self?.showMainWindow()
+    },
+    showsWindowAfterPick: showsWindowAfterStatusBarPick,
+    onShowWindowAfterPickChange: { [weak self] value in
+      self?.setShowsWindowAfterStatusBarPick(value)
     },
     onAbout: { [weak self] in
       self?.showAbout(nil)
@@ -44,6 +63,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     configureApplicationIcon()
     configureApplicationMenu()
     refreshStatusBar()
+    guard !isRunningUnitTests else {
+      return
+    }
     DispatchQueue.main.async { [weak self] in
       self?.showMainWindow()
       self?.requestRequiredPermissionsOnLaunch()
@@ -70,7 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     window.updateTitlebarCount(window.store.history.count)
     applyMainWindowLevel()
     window.store.onPickRequested = { [weak self] in
-      self?.startPickerFromToolbar(nil)
+      self?.startPicker(from: .mainWindow)
     }
     window.store.onImportRequested = { [weak self] in
       self?.importImagesFromToolbar(nil)
@@ -133,10 +155,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
   @objc
   func startPickerFromToolbar(_ sender: Any?) {
+    startPicker(from: .mainWindow)
+  }
+
+  private func startPicker(from source: PickerInvocationSource) {
     guard ensureScreenCaptureAccess() else {
       return
     }
 
+    pickerInvocationSource = source
+    shouldRestoreMainWindowAfterStatusBarPick = false
     screenColorPicker.start()
   }
 
@@ -217,6 +245,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
       blue: payload.blue,
       previewPng: payload.previewPng
     )
+  }
+
+  private func handlePickerWindowHide() {
+    switch pickerInvocationSource {
+    case .mainWindow:
+      hideMainWindow()
+    case .statusBar:
+      guard
+        let window = mainWindow,
+        window.isVisible,
+        window.isKeyWindow || window.isMainWindow
+      else {
+        return
+      }
+
+      shouldRestoreMainWindowAfterStatusBarPick = true
+      hideMainWindow()
+    }
+  }
+
+  private func handlePickerWindowRestore() {
+    defer {
+      pickerInvocationSource = .mainWindow
+      shouldRestoreMainWindowAfterStatusBarPick = false
+    }
+
+    switch pickerInvocationSource {
+    case .mainWindow:
+      showMainWindow()
+    case .statusBar:
+      guard showsWindowAfterStatusBarPick || shouldRestoreMainWindowAfterStatusBarPick else {
+        return
+      }
+      showMainWindowWithoutActivating()
+    }
+  }
+
+  private func setShowsWindowAfterStatusBarPick(_ value: Bool) {
+    showsWindowAfterStatusBarPick = value
+    UserDefaults.standard.set(value, forKey: Self.showWindowAfterStatusBarPickKey)
+    statusBarController.setShowsWindowAfterPick(value)
   }
 
   private func copyText(_ text: String) {
@@ -353,6 +422,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     applyMainWindowLevel()
     NSRunningApplication.current.activate(options: [.activateIgnoringOtherApps])
     window.makeKeyAndOrderFront(nil)
+  }
+
+  private func showMainWindowWithoutActivating() {
+    guard let window = mainWindow else {
+      return
+    }
+
+    applyMainWindowLevel()
+    window.orderFront(nil)
   }
 
   private func hideMainWindow() {
