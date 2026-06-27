@@ -372,8 +372,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   }
 
   private func requestRequiredPermissionsOnLaunch() {
+    let needsScreenCaptureAccess: Bool
+    if #available(macOS 10.15, *) {
+      needsScreenCaptureAccess = !CGPreflightScreenCaptureAccess()
+    } else {
+      needsScreenCaptureAccess = false
+    }
+    let needsAccessibilityAccess = !AXIsProcessTrusted()
+
+    guard needsScreenCaptureAccess || needsAccessibilityAccess else {
+      return
+    }
+
+    showRequiredPermissionsExplanationAlert(
+      needsScreenCaptureAccess: needsScreenCaptureAccess,
+      needsAccessibilityAccess: needsAccessibilityAccess
+    )
     requestScreenCaptureAccessOnLaunch()
     requestAccessibilityAccessOnLaunch()
+  }
+
+  private func showRequiredPermissionsExplanationAlert(
+    needsScreenCaptureAccess: Bool,
+    needsAccessibilityAccess: Bool
+  ) {
+    var permissions: [String] = []
+    if needsScreenCaptureAccess {
+      permissions.append("Screen Recording lets Pipetka sample pixels under your cursor.")
+    }
+    if needsAccessibilityAccess {
+      permissions.append("Accessibility lets Pipetka hide and restore app windows while picking colors.")
+    }
+
+    let alert = NSAlert()
+    alert.messageText = "Pipetka needs macOS permissions"
+    alert.informativeText = permissions.joined(separator: "\n\n")
+    alert.alertStyle = .informational
+    alert.addButton(withTitle: "Continue")
+    alert.runModal()
   }
 
   private func requestScreenCaptureAccessOnLaunch() {
