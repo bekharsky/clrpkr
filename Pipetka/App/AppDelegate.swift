@@ -1,6 +1,7 @@
 import ApplicationServices
 import Cocoa
 import PipetkaCore
+import ServiceManagement
 
 @main
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation {
@@ -24,8 +25,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   private var showsWindowAfterStatusBarPick = UserDefaults.standard.bool(
     forKey: AppDelegate.showWindowAfterStatusBarPickKey
   )
+  private var isLaunchAtLoginEnabled = LaunchAtLoginController.isEnabled
   private var aboutWindowController: NSWindowController?
   private weak var alwaysOnTopMenuItem: NSMenuItem?
+  private weak var launchAtLoginMenuItem: NSMenuItem?
   private lazy var screenColorPicker = ScreenColorPicker(
     hideWindow: { [weak self] in
       self?.handlePickerWindowHide()
@@ -47,6 +50,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     showsWindowAfterPick: showsWindowAfterStatusBarPick,
     onShowWindowAfterPickChange: { [weak self] value in
       self?.setShowsWindowAfterStatusBarPick(value)
+    },
+    isLaunchAtLoginEnabled: isLaunchAtLoginEnabled,
+    onLaunchAtLoginChange: { [weak self] value in
+      self?.setLaunchAtLoginEnabled(value)
     },
     onAbout: { [weak self] in
       self?.showAbout(nil)
@@ -115,6 +122,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
       appMenuItem.title = appName
       appMenuItem.submenu?.title = appName
     }
+
+    if let aboutItem = applicationMenu.items.first(where: { $0.title == "About \(appName)" }) {
+      aboutItem.action = #selector(showAbout(_:))
+      aboutItem.target = self
+    }
+
+    configureLaunchAtLoginApplicationMenuItem()
 
     if let hideIndex = applicationMenu.items.firstIndex(where: { $0.keyEquivalent == "h" }) {
       let hideItem = applicationMenu.items[hideIndex]
@@ -288,6 +302,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     statusBarController.setShowsWindowAfterPick(value)
   }
 
+  private func setLaunchAtLoginEnabled(_ value: Bool) {
+    guard value != isLaunchAtLoginEnabled else {
+      refreshLaunchAtLoginMenuState()
+      return
+    }
+
+    do {
+      try LaunchAtLoginController.setEnabled(value)
+      isLaunchAtLoginEnabled = value
+      refreshLaunchAtLoginMenuState()
+    } catch {
+      refreshLaunchAtLoginMenuState()
+      showLaunchAtLoginError(error)
+    }
+  }
+
+  @objc
+  private func toggleLaunchAtLogin(_ sender: Any?) {
+    setLaunchAtLoginEnabled(!isLaunchAtLoginEnabled)
+  }
+
   private func copyText(_ text: String) {
     let pasteboard = NSPasteboard.general
     pasteboard.clearContents()
@@ -340,6 +375,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     versionLabel.textColor = .secondaryLabelColor
     versionLabel.alignment = .center
 
+    let descriptionLabel = NSTextField(
+      wrappingLabelWithString: "Advanced color picker for sampling, naming, and exporting precise palettes."
+    )
+    descriptionLabel.font = NSFont.systemFont(ofSize: 13)
+    descriptionLabel.textColor = .labelColor
+    descriptionLabel.alignment = .center
+    descriptionLabel.maximumNumberOfLines = 0
+
     let authorLabel = NSTextField(labelWithString: "Author: Sergey Bekharskiy")
     authorLabel.font = NSFont.systemFont(ofSize: 12)
     authorLabel.textColor = .secondaryLabelColor
@@ -362,6 +405,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
       iconView,
       appNameLabel,
       versionLabel,
+      descriptionLabel,
       authorLabel,
       copyrightLabel,
       attributionTitle,
@@ -377,6 +421,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     attributionLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
     attributionLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     attributionTitle.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    descriptionLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
     NSLayoutConstraint.activate([
       stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -385,6 +430,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
       stack.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor),
       iconView.widthAnchor.constraint(equalToConstant: 64),
       iconView.heightAnchor.constraint(equalToConstant: 64),
+      descriptionLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 340),
       attributionLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 340)
     ])
 
@@ -555,6 +601,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     mainMenu.insertItem(toolsMenuItem, at: min(1, mainMenu.numberOfItems))
   }
 
+  private func configureLaunchAtLoginApplicationMenuItem() {
+    applicationMenu.items.removeAll { $0.action == #selector(toggleLaunchAtLogin(_:)) }
+
+    let item = NSMenuItem(
+      title: "Launch at Login",
+      action: #selector(toggleLaunchAtLogin(_:)),
+      keyEquivalent: ""
+    )
+    item.target = self
+    item.state = isLaunchAtLoginEnabled ? .on : .off
+
+    let insertionIndex: Int
+    if let preferencesIndex = applicationMenu.items.firstIndex(where: { $0.title == "Preferences…" }) {
+      insertionIndex = preferencesIndex + 1
+    } else if let servicesIndex = applicationMenu.items.firstIndex(where: { $0.title == "Services" }) {
+      insertionIndex = servicesIndex
+    } else {
+      insertionIndex = min(2, applicationMenu.numberOfItems)
+    }
+
+    applicationMenu.insertItem(item, at: insertionIndex)
+    launchAtLoginMenuItem = item
+    refreshLaunchAtLoginMenuState()
+  }
+
+  private func refreshLaunchAtLoginMenuState() {
+    isLaunchAtLoginEnabled = LaunchAtLoginController.isEnabled
+    launchAtLoginMenuItem?.state = isLaunchAtLoginEnabled ? .on : .off
+    statusBarController.setLaunchAtLoginEnabled(isLaunchAtLoginEnabled)
+  }
+
+  private func showLaunchAtLoginError(_ error: Error) {
+    let alert = NSAlert()
+    alert.messageText = "Launch at Login could not be updated"
+    alert.informativeText = error.localizedDescription
+    alert.alertStyle = .warning
+    alert.addButton(withTitle: "OK")
+    alert.runModal()
+  }
+
   private func replaceAppNamePlaceholders(in menu: NSMenu?, with appName: String) {
     guard let menu else {
       return
@@ -635,5 +721,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 private extension String {
   var nonEmpty: String? {
     isEmpty ? nil : self
+  }
+}
+
+enum LaunchAtLoginController {
+  static var isEnabled: Bool {
+    SMAppService.mainApp.status == .enabled
+  }
+
+  static func setEnabled(_ enabled: Bool) throws {
+    if enabled {
+      if SMAppService.mainApp.status != .enabled {
+        try SMAppService.mainApp.register()
+      }
+    } else if SMAppService.mainApp.status == .enabled {
+      try SMAppService.mainApp.unregister()
+    }
   }
 }

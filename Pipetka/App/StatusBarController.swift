@@ -4,6 +4,7 @@ final class StatusBarController: NSObject {
   private let onPick: () -> Void
   private let onShow: () -> Void
   private let onShowWindowAfterPickChange: (Bool) -> Void
+  private let onLaunchAtLoginChange: (Bool) -> Void
   private let onAbout: () -> Void
   private let onQuit: () -> Void
   private let onCopy: (String) -> Void
@@ -12,6 +13,7 @@ final class StatusBarController: NSObject {
   private let statusMenu = NSMenu()
   private var recentPickItems: [RecentPickMenuItem] = []
   private var showsWindowAfterPick: Bool
+  private var isLaunchAtLoginEnabled: Bool
   private var isInstalled = false
 
   init(
@@ -19,6 +21,8 @@ final class StatusBarController: NSObject {
     onShow: @escaping () -> Void,
     showsWindowAfterPick: Bool,
     onShowWindowAfterPickChange: @escaping (Bool) -> Void,
+    isLaunchAtLoginEnabled: Bool,
+    onLaunchAtLoginChange: @escaping (Bool) -> Void,
     onAbout: @escaping () -> Void,
     onQuit: @escaping () -> Void,
     onCopy: @escaping (String) -> Void
@@ -27,6 +31,8 @@ final class StatusBarController: NSObject {
     self.onShow = onShow
     self.showsWindowAfterPick = showsWindowAfterPick
     self.onShowWindowAfterPickChange = onShowWindowAfterPickChange
+    self.isLaunchAtLoginEnabled = isLaunchAtLoginEnabled
+    self.onLaunchAtLoginChange = onLaunchAtLoginChange
     self.onAbout = onAbout
     self.onQuit = onQuit
     self.onCopy = onCopy
@@ -90,6 +96,11 @@ final class StatusBarController: NSObject {
     rebuildMenu()
   }
 
+  func setLaunchAtLoginEnabled(_ value: Bool) {
+    isLaunchAtLoginEnabled = value
+    rebuildMenu()
+  }
+
   private func rebuildMenu() {
     statusMenu.removeAllItems()
 
@@ -104,9 +115,17 @@ final class StatusBarController: NSObject {
     )
     showAfterPickItem.target = self
     showAfterPickItem.state = showsWindowAfterPick ? .on : .off
+    let launchAtLoginItem = NSMenuItem(
+      title: "Launch at Login",
+      action: #selector(handleLaunchAtLoginToggle),
+      keyEquivalent: ""
+    )
+    launchAtLoginItem.target = self
+    launchAtLoginItem.state = isLaunchAtLoginEnabled ? .on : .off
     statusMenu.addItem(showItem)
     statusMenu.addItem(pickItem)
     statusMenu.addItem(showAfterPickItem)
+    statusMenu.addItem(launchAtLoginItem)
     statusMenu.addItem(NSMenuItem.separator())
 
     if recentPickItems.isEmpty {
@@ -149,6 +168,11 @@ final class StatusBarController: NSObject {
     showsWindowAfterPick.toggle()
     onShowWindowAfterPickChange(showsWindowAfterPick)
     rebuildMenu()
+  }
+
+  @objc
+  private func handleLaunchAtLoginToggle() {
+    onLaunchAtLoginChange(!isLaunchAtLoginEnabled)
   }
 
   @objc
