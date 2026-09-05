@@ -10,25 +10,44 @@ struct HistoryRowButton: View {
   @State private var showBurst = false
   @State private var burstLifted = false
   @State private var burstID = 0
+  @FocusState private var isFocused: Bool
 
   var body: some View {
-    Button {
-      triggerBurst()
-      action()
-    } label: {
-      ZStack(alignment: .trailing) {
-        rowContent
+    ZStack(alignment: .trailing) {
+      rowContent
 
-        if showBurst {
-          SymbolView(symbolName: "doc.on.doc", fallbackText: "Copy")
-            .foregroundColor(.secondary)
-            .opacity(burstLifted ? 0 : 1)
-            .offset(x: -6, y: burstLifted ? -22 : -6)
-            .zIndex(1)
+      HistoryRowControl(
+        accessibilityLabel: formatColor(item, format: format),
+        onActivate: {
+          triggerBurst()
+          action()
         }
+      )
+      .focusable()
+      .focused($isFocused)
+      .disablesSystemFocusEffectWhenAvailable()
+
+      if isFocused {
+        RoundedRectangle(cornerRadius: 12)
+          .fill(Color.accentColor.opacity(0.045))
+          .overlay(
+            RoundedRectangle(cornerRadius: 12)
+              .stroke(Color.accentColor.opacity(0.58), lineWidth: 1.5)
+          )
+          .padding(1)
+          .allowsHitTesting(false)
+      }
+
+      if showBurst {
+        SymbolView(symbolName: "doc.on.doc", fallbackText: "Copy")
+          .foregroundColor(.secondary)
+          .opacity(burstLifted ? 0 : 1)
+          .offset(x: -6, y: burstLifted ? -22 : -6)
+          .zIndex(1)
       }
     }
-    .buttonStyle(.plain)
+    .accessibilityLabel(formatColor(item, format: format))
+    .accessibilityHint("Copies this color to the clipboard")
     .onHover { hovering in
       withAnimation(.easeInOut(duration: 0.12)) {
         isHovering = hovering
@@ -121,6 +140,71 @@ struct HistoryRowButton: View {
   }
 }
 
+private struct HistoryRowControl: NSViewRepresentable {
+  let accessibilityLabel: String
+  let onActivate: () -> Void
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(onActivate: onActivate)
+  }
+
+  func makeNSView(context: Context) -> FullRowButton {
+    let button = FullRowButton()
+    button.target = context.coordinator
+    button.action = #selector(Coordinator.activate(_:))
+    button.title = accessibilityLabel
+    button.setAccessibilityLabel(accessibilityLabel)
+    button.toolTip = "Copy \(accessibilityLabel)"
+    return button
+  }
+
+  func updateNSView(_ button: FullRowButton, context: Context) {
+    context.coordinator.onActivate = onActivate
+    button.title = accessibilityLabel
+    button.setAccessibilityLabel(accessibilityLabel)
+  }
+
+  final class Coordinator: NSObject {
+    var onActivate: () -> Void
+
+    init(onActivate: @escaping () -> Void) {
+      self.onActivate = onActivate
+    }
+
+    @objc
+    func activate(_ sender: NSButton) {
+      onActivate()
+    }
+  }
+}
+
+private final class FullRowButton: NSButton {
+  override init(frame frameRect: NSRect) {
+    super.init(frame: frameRect)
+    isBordered = false
+    focusRingType = .none
+    refusesFirstResponder = true
+  }
+
+  required init?(coder: NSCoder) {
+    super.init(coder: coder)
+  }
+
+  override func draw(_ dirtyRect: NSRect) { }
+
+}
+
+private extension View {
+  @ViewBuilder
+  func disablesSystemFocusEffectWhenAvailable() -> some View {
+    if #available(macOS 14.0, *) {
+      focusEffectDisabled()
+    } else {
+      self
+    }
+  }
+}
+
 struct PaletteSwatchChip: View {
   let color: NSColor
   let toolTip: String
@@ -138,6 +222,9 @@ struct PaletteSwatchChip: View {
     }
     .frame(width: 32, height: 32)
     .buttonStyle(.plain)
+    .help(toolTip)
+    .accessibilityLabel(toolTip)
+    .accessibilityHint("Copies this color to the clipboard")
   }
 
   private var swatch: some View {
@@ -183,17 +270,18 @@ struct FormatPillControl: View {
 
         HStack(spacing: spacing) {
           ForEach(formats, id: \.rawValue) { format in
-            Text(format.label)
-              .font(.system(size: 12, weight: .semibold))
-              .foregroundColor(selection == format ? .primary : .secondary)
-              .frame(maxWidth: .infinity)
-              .frame(height: activeHeight)
-              .contentShape(RoundedRectangle(cornerRadius: activeCornerRadius))
-              .onTapGesture {
-                withAnimation(.spring(response: 0.22, dampingFraction: 0.88)) {
-                  selection = format
-                }
+            FormatSegmentButton(
+              label: format.label,
+              isSelected: selection == format,
+              onActivate: {
+                select(format)
+              },
+              onMove: { offset in
+                selectAdjacentFormat(to: format, offset: offset)
               }
+            )
+            .frame(maxWidth: .infinity)
+            .frame(height: activeHeight)
           }
         }
         .padding(inset)
@@ -202,6 +290,8 @@ struct FormatPillControl: View {
         RoundedRectangle(cornerRadius: trackCornerRadius)
           .stroke(Color.black.opacity(0.06), lineWidth: 1)
       )
+      .accessibilityElement(children: .contain)
+      .accessibilityLabel("Color format")
     }
     .frame(height: controlHeight)
   }
@@ -213,5 +303,134 @@ struct FormatPillControl: View {
 
   private func activeOffset(for index: Int, width: CGFloat) -> CGFloat {
     inset + CGFloat(index) * (width + spacing)
+  }
+
+  private func selectAdjacentFormat(to format: ColorFormat, offset: Int) {
+    guard let index = formats.firstIndex(of: format) else {
+      return
+    }
+
+    let nextIndex = min(max(index + offset, 0), formats.count - 1)
+    guard nextIndex != index else {
+      return
+    }
+
+    select(formats[nextIndex])
+  }
+
+  private func select(_ format: ColorFormat) {
+    withAnimation(.spring(response: 0.22, dampingFraction: 0.88)) {
+      selection = format
+    }
+  }
+}
+
+private struct FormatSegmentButton: NSViewRepresentable {
+  let label: String
+  let isSelected: Bool
+  let onActivate: () -> Void
+  let onMove: (Int) -> Void
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(onActivate: onActivate, onMove: onMove)
+  }
+
+  func makeNSView(context: Context) -> KeyboardSegmentButton {
+    let button = KeyboardSegmentButton()
+    button.target = context.coordinator
+    button.action = #selector(Coordinator.activate(_:))
+    button.title = label
+    button.setAccessibilityLabel(label)
+    button.toolTip = "Select \(label) color format"
+    button.onMove = context.coordinator.onMove
+    return button
+  }
+
+  func updateNSView(_ button: KeyboardSegmentButton, context: Context) {
+    context.coordinator.onActivate = onActivate
+    context.coordinator.onMove = onMove
+    button.title = label
+    button.setAccessibilityLabel(label)
+    button.setAccessibilityValue(isSelected ? "Selected" : "Not selected")
+    button.textColor = isSelected ? .labelColor : .secondaryLabelColor
+    button.onMove = context.coordinator.onMove
+  }
+
+  final class Coordinator: NSObject {
+    var onActivate: () -> Void
+    var onMove: (Int) -> Void
+
+    init(onActivate: @escaping () -> Void, onMove: @escaping (Int) -> Void) {
+      self.onActivate = onActivate
+      self.onMove = onMove
+    }
+
+    @objc
+    func activate(_ sender: NSButton) {
+      onActivate()
+    }
+  }
+}
+
+private final class KeyboardSegmentButton: NSButton {
+  var onMove: ((Int) -> Void)?
+  var textColor: NSColor = .secondaryLabelColor {
+    didSet { needsDisplay = true }
+  }
+
+  override init(frame frameRect: NSRect) {
+    super.init(frame: frameRect)
+    title = ""
+    isBordered = false
+    focusRingType = .default
+  }
+
+  required init?(coder: NSCoder) {
+    super.init(coder: coder)
+  }
+
+  override func draw(_ dirtyRect: NSRect) {
+    let paragraphStyle = NSMutableParagraphStyle()
+    paragraphStyle.alignment = .center
+    paragraphStyle.lineBreakMode = .byTruncatingTail
+
+    let attributes: [NSAttributedString.Key: Any] = [
+      .font: NSFont.systemFont(ofSize: 12, weight: .semibold),
+      .foregroundColor: textColor,
+      .paragraphStyle: paragraphStyle
+    ]
+    let textRect = bounds.insetBy(dx: 2, dy: 4)
+    title.draw(in: textRect, withAttributes: attributes)
+  }
+
+  override func drawFocusRingMask() {
+    NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 8, yRadius: 8).fill()
+  }
+
+  override var focusRingMaskBounds: NSRect {
+    bounds
+  }
+
+  override func keyDown(with event: NSEvent) {
+    switch event.keyCode {
+    case 123:
+      moveFocus(by: -1)
+    case 124:
+      moveFocus(by: 1)
+    case 36, 49, 76:
+      performClick(nil)
+    default:
+      super.keyDown(with: event)
+    }
+  }
+
+  private func moveFocus(by offset: Int) {
+    let target = offset < 0 ? previousValidKeyView : nextValidKeyView
+    guard let target = target as? KeyboardSegmentButton else {
+      return
+    }
+
+    onMove?(offset)
+    window?.makeFirstResponder(target)
   }
 }

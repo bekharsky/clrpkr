@@ -67,9 +67,6 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
       titlebarSeparatorStyle = .none
     }
 
-    DispatchQueue.main.async { [weak self] in
-      self?.suppressControlFocusRings()
-    }
   }
 
   func syncToolbarState() {
@@ -181,26 +178,6 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
     updateTitlebarCount(store.history.count)
   }
 
-  private func suppressControlFocusRings() {
-    if let rootView = standardWindowButton(.closeButton)?.superview?.superview {
-      suppressFocusRings(in: rootView)
-    }
-
-    if let contentView {
-      suppressFocusRings(in: contentView)
-    }
-  }
-
-  private func suppressFocusRings(in rootView: NSView) {
-    if let button = rootView as? NSButton {
-      button.focusRingType = .none
-    }
-
-    for subview in rootView.subviews {
-      suppressFocusRings(in: subview)
-    }
-  }
-
   private func makeToolbarItem(
     identifier: NSToolbarItem.Identifier,
     label: String,
@@ -253,7 +230,6 @@ final class MainWindow: NSWindow, NSToolbarDelegate {
     button.controlSize = .regular
     button.isBordered = true
     button.imagePosition = .imageOnly
-    button.focusRingType = .none
     button.translatesAutoresizingMaskIntoConstraints = false
     button.setButtonType(.momentaryPushIn)
     button.imageScaling = .scaleNone

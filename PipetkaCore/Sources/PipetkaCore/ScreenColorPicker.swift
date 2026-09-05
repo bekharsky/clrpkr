@@ -22,20 +22,24 @@ public final class ScreenColorPicker {
   private let showWindow: () -> Void
   private let onPick: (PickedColorPayload) -> Void
   private let onCancel: (() -> Void)?
+  private let usesTestSampling: Bool
   private var overlayPanels: [PickerOverlayPanel] = []
   private var lensPanel: PickerLensPanel?
   private var lensView: PickerLensView?
+  private var selectionPoint: CGPoint?
 
   public init(
     hideWindow: @escaping () -> Void,
     showWindow: @escaping () -> Void,
     onPick: @escaping (PickedColorPayload) -> Void,
-    onCancel: (() -> Void)? = nil
+    onCancel: (() -> Void)? = nil,
+    usesTestSampling: Bool = false
   ) {
     self.hideWindow = hideWindow
     self.showWindow = showWindow
     self.onPick = onPick
     self.onCancel = onCancel
+    self.usesTestSampling = usesTestSampling
   }
 
   public func start() {
@@ -102,6 +106,30 @@ public final class ScreenColorPicker {
     )
   }
 
+  fileprivate func confirmKeyboardSelection() {
+    let point = selectionPoint ?? NSEvent.mouseLocation
+    guard let sample = PixelSampler.sample(at: point, usesTestSampling: usesTestSampling) else {
+      return
+    }
+    complete(with: sample)
+  }
+
+  fileprivate func moveSelection(by offset: CGVector) {
+    let currentPoint = selectionPoint ?? NSEvent.mouseLocation
+    let proposedPoint = CGPoint(
+      x: currentPoint.x + offset.dx,
+      y: currentPoint.y + offset.dy
+    )
+    let screenFrame = NSScreen.screens.first(where: { $0.frame.contains(currentPoint) })?.frame
+      ?? NSScreen.main?.frame
+      ?? .zero
+    let point = CGPoint(
+      x: min(max(proposedPoint.x, screenFrame.minX), screenFrame.maxX - 1),
+      y: min(max(proposedPoint.y, screenFrame.minY), screenFrame.maxY - 1)
+    )
+    refresh(at: point)
+  }
+
   func cancel() {
     tearDownOverlay()
     showWindow()
@@ -109,10 +137,11 @@ public final class ScreenColorPicker {
   }
 
   fileprivate func refresh(at mousePoint: CGPoint) {
-    guard let sample = PixelSampler.sample(at: mousePoint) else {
+    guard let sample = PixelSampler.sample(at: mousePoint, usesTestSampling: usesTestSampling) else {
       return
     }
 
+    selectionPoint = mousePoint
     lensView?.sample = sample
     lensView?.mousePoint = mousePoint
     lensView?.needsDisplay = true
@@ -129,12 +158,20 @@ public final class ScreenColorPicker {
     lensPanel.orderFrontRegardless()
   }
 
+  fileprivate func confirmSelection(at point: CGPoint) {
+    guard let sample = PixelSampler.sample(at: point, usesTestSampling: usesTestSampling) else {
+      return
+    }
+    complete(with: sample)
+  }
+
   private func tearDownOverlay() {
     overlayPanels.forEach { $0.orderOut(nil) }
     overlayPanels.removeAll()
     lensPanel?.orderOut(nil)
     lensPanel = nil
     lensView = nil
+    selectionPoint = nil
     NSCursor.pop()
   }
 
@@ -176,6 +213,8 @@ final class PickerLensPanel: NSPanel {
 final class PickerOverlayView: NSView {
   weak var bridge: ScreenColorPicker?
   var screenFrame: CGRect = .zero
+  private var heldArrowKey: UInt16?
+  private var arrowKeyPressTimestamp: TimeInterval?
 
   override var acceptsFirstResponder: Bool { true }
 
@@ -201,9 +240,7 @@ final class PickerOverlayView: NSView {
   }
 
   override func mouseDown(with event: NSEvent) {
-    if let sample = PixelSampler.sample(at: NSEvent.mouseLocation) {
-      bridge?.complete(with: sample)
-    }
+    bridge?.confirmSelection(at: NSEvent.mouseLocation)
   }
 
   override func rightMouseDown(with event: NSEvent) {
@@ -211,11 +248,44 @@ final class PickerOverlayView: NSView {
   }
 
   override func keyDown(with event: NSEvent) {
-    if event.keyCode == 53 {  // Escape
+    switch event.keyCode {
+    case 53:  // Escape
       bridge?.cancel()
-      return
+    case 36, 49, 76:  // Return, Space, keypad Enter
+      bridge?.confirmKeyboardSelection()
+    case 123:  // Left arrow
+      bridge?.moveSelection(by: CGVector(dx: -keyboardStep(for: event), dy: 0))
+    case 124:  // Right arrow
+      bridge?.moveSelection(by: CGVector(dx: keyboardStep(for: event), dy: 0))
+    case 125:  // Down arrow
+      bridge?.moveSelection(by: CGVector(dx: 0, dy: -keyboardStep(for: event)))
+    case 126:  // Up arrow
+      bridge?.moveSelection(by: CGVector(dx: 0, dy: keyboardStep(for: event)))
+    default:
+      super.keyDown(with: event)
     }
-    super.keyDown(with: event)
+  }
+
+  private func keyboardStep(for event: NSEvent) -> CGFloat {
+    if !event.isARepeat || heldArrowKey != event.keyCode {
+      heldArrowKey = event.keyCode
+      arrowKeyPressTimestamp = event.timestamp
+    }
+
+    let heldDuration = event.timestamp - (arrowKeyPressTimestamp ?? event.timestamp)
+    let acceleration: CGFloat
+    switch heldDuration {
+    case ..<0.35:
+      acceleration = 1
+    case ..<0.8:
+      acceleration = 2
+    case ..<1.4:
+      acceleration = 5
+    default:
+      acceleration = 12
+    }
+
+    return acceleration * (event.modifierFlags.contains(.shift) ? 10 : 1)
   }
 }
 
@@ -363,11 +433,18 @@ private struct PixelSample {
 }
 
 private enum PixelSampler {
-  static func sample(at point: CGPoint) -> PixelSample? {
+  static func sample(at point: CGPoint, usesTestSampling: Bool = false) -> PixelSample? {
     guard
-      let screen = NSScreen.screens.first(where: { NSMouseInRect(point, $0.frame, false) }),
-      let displayNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
+      let screen = NSScreen.screens.first(where: { NSMouseInRect(point, $0.frame, false) })
     else {
+      return nil
+    }
+
+    if usesTestSampling {
+      return testSample(at: point, screen: screen)
+    }
+
+    guard let displayNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
       return nil
     }
 
@@ -440,5 +517,41 @@ private enum PixelSampler {
   private static func pngData(for image: CGImage) -> Data? {
     let bitmap = NSBitmapImageRep(cgImage: image)
     return bitmap.representation(using: .png, properties: [:])
+  }
+
+  private static func testSample(at point: CGPoint, screen: NSScreen) -> PixelSample? {
+    let red = Int(point.x.rounded()) & 0xFF
+    let green = Int(point.y.rounded()) & 0xFF
+    let blue = (red &+ green) / 2
+    let color = NSColor(
+      srgbRed: CGFloat(red) / 255,
+      green: CGFloat(green) / 255,
+      blue: CGFloat(blue) / 255,
+      alpha: 1
+    )
+    let imageSize = NSSize(width: 15, height: 15)
+    let image = NSImage(size: imageSize)
+    image.lockFocus()
+    color.setFill()
+    NSRect(origin: .zero, size: imageSize).fill()
+    image.unlockFocus()
+
+    guard
+      let bitmap = NSBitmapImageRep(data: image.tiffRepresentation ?? Data()),
+      let previewImage = bitmap.cgImage,
+      let previewPng = bitmap.representation(using: .png, properties: [:])
+    else {
+      return nil
+    }
+
+    return PixelSample(
+      red: red,
+      green: green,
+      blue: blue,
+      hex: String(format: "#%02X%02X%02X", red, green, blue),
+      previewImage: previewImage,
+      previewPng: previewPng,
+      screenFrame: screen.visibleFrame
+    )
   }
 }

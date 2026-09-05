@@ -22,6 +22,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   private var isRunningUnitTests: Bool {
     ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
   }
+  private var isUITesting: Bool {
+    ProcessInfo.processInfo.arguments.contains("-ui-testing")
+      || ProcessInfo.processInfo.environment["PIPETKA_UI_TESTING"] == "1"
+  }
   private var showsWindowAfterStatusBarPick = UserDefaults.standard.bool(
     forKey: AppDelegate.showWindowAfterStatusBarPickKey
   )
@@ -38,7 +42,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     },
     onPick: { [weak self] payload in
       self?.handlePickedColor(payload)
-    }
+    },
+    usesTestSampling: isUITesting
   )
   private lazy var statusBarController = StatusBarController(
     onPick: { [weak self] in
@@ -496,6 +501,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   }
 
   private func requestRequiredPermissionsOnLaunch() {
+    guard !isUITesting else {
+      return
+    }
+
     let needsScreenCaptureAccess: Bool
     if #available(macOS 10.15, *) {
       needsScreenCaptureAccess = !CGPreflightScreenCaptureAccess()
@@ -661,6 +670,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   }
 
   private func ensureScreenCaptureAccess() -> Bool {
+    if isUITesting {
+      return true
+    }
+
     guard #available(macOS 10.15, *) else {
       return true
     }

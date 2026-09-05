@@ -37,6 +37,8 @@ struct PagerButton: View {
         .frame(width: 20, height: 20)
     }
     .buttonStyle(.plain)
+    .help(toolTip)
+    .accessibilityLabel(toolTip)
   }
 }
 
@@ -53,6 +55,8 @@ struct SmallIconButton: View {
         .frame(width: 24, height: 24)
     }
     .buttonStyle(.plain)
+    .help(toolTip)
+    .accessibilityLabel(toolTip)
   }
 }
 
@@ -76,13 +80,6 @@ struct MenuButtonItem {
   let action: () -> Void
 }
 
-final class SoftFocusButton: NSButton {
-  override var focusRingType: NSFocusRingType {
-    get { .none }
-    set { }
-  }
-}
-
 struct NativeButton: NSViewRepresentable {
   let title: String
   let controlSize: NSControl.ControlSize
@@ -94,7 +91,7 @@ struct NativeButton: NSViewRepresentable {
   }
 
   func makeNSView(context: Context) -> NSButton {
-    let button = SoftFocusButton(title: title, target: context.coordinator, action: #selector(Coordinator.handlePress(_:)))
+    let button = NSButton(title: title, target: context.coordinator, action: #selector(Coordinator.handlePress(_:)))
     button.bezelStyle = .rounded
     button.controlSize = controlSize
     button.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: controlSize))
@@ -135,7 +132,7 @@ struct MenuButton: NSViewRepresentable {
   }
 
   func makeNSView(context: Context) -> NSButton {
-    let button = SoftFocusButton(title: title, target: context.coordinator, action: #selector(Coordinator.showMenu(_:)))
+    let button = NSButton(title: title, target: context.coordinator, action: #selector(Coordinator.showMenu(_:)))
     button.bezelStyle = .rounded
     button.controlSize = controlSize
     button.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: controlSize))
